@@ -13,6 +13,7 @@
 import { loadScript, type PayPalNamespace } from "@paypal/paypal-js";
 
 import type { PaymentMode } from "./stripe";
+import { config } from "../config";
 
 /**
  * Currencies PayPal accepts for CAPTURE-intent orders. INR, RON, ZAR and
@@ -35,7 +36,7 @@ export function isPayPalCurrencySupported(currencyCode: string | undefined | nul
 const cache: Partial<Record<PaymentMode, Promise<PayPalNamespace>>> = {};
 
 function clientIdFor(mode: PaymentMode): string {
-  return import.meta.env.VITE_PAYPAL_CLIENT_ID_LIVE;
+  return mode === "sandbox" ? config.paypalClientIdSandbox : config.paypalClientIdLive;
 }
 
 /**
