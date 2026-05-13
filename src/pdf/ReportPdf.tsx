@@ -197,13 +197,13 @@ export const ReportPdf = ({
               const fillPct = dominantIsRight ? tp.percentage : 100 - tp.percentage;
               return (
                 <View key={tp.dim} style={s.axisRow}>
-                  <Text style={[s.axisLabelL, !dominantIsRight && s.axisLabelActive]}>
+                  <Text style={[s.axisLabelL, !dominantIsRight ? s.axisLabelActive : null]}>
                     {poles[0]}
                   </Text>
                   <View style={s.axisTrack}>
                     <View style={[s.axisFill, { width: `${fillPct}%` }]} />
                   </View>
-                  <Text style={[s.axisLabelR, dominantIsRight && s.axisLabelActive]}>
+                  <Text style={[s.axisLabelR, dominantIsRight ? s.axisLabelActive : null]}>
                     {poles[1]}
                   </Text>
                   <Text style={s.axisPct}>{tp.percentage}%</Text>
