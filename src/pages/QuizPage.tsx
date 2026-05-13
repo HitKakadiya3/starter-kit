@@ -20,7 +20,9 @@ const QuizPage = () => {
     queryKey: ['questions'],
     queryFn: () =>
       apiGet<{ questions: ApiQuestion[] }>('questions?variant_type=&tag='),
-    staleTime: Infinity,
+    staleTime: 0,
+    gcTime: 0,
+    refetchOnMount: 'always',
     retry: 0,
   });
 

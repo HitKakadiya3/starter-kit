@@ -72,6 +72,13 @@ const EmailCapturePage = () => {
 
     try {
       const res = await apiPost<QuizSubmitResponse>('questions/submit', body);
+      // /questions/submit already carries `landing_url_detail`, so mark the
+      // checkout-page de-dup flag here using the same key/format. CheckoutPage
+      // reads `landing_url_sent_${qid}` and skips its own
+      // /save-landing-url-details call when today's date is already stored,
+      // preventing a duplicate write on the same calendar day.
+      const today = formatJerusalemDateTime(Date.now()).slice(0, 10);
+      localStorage.setItem(`landing_url_sent_${res.quiz_result_id}`, today);
       // GA4 `test_completed` (autoEvent / funnel). Fired after the backend
       // accepts the submission so abandoned-then-resubmitted retries don't
       // double-count.

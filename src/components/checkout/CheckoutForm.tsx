@@ -447,9 +447,14 @@ function CheckoutBody(props: CheckoutBodyProps) {
 
       {/* Credit or debit card — VISUAL LOCK. Hidden when the card form is
           expanded; the back button below replaces it for collapsing the
-          form back to the multi-method view. */}
+          form back to the multi-method view.
+          `whitespace-normal break-words h-auto` overrides the Button base
+          `whitespace-nowrap` + fixed `h-14` so long localized labels (e.g.
+          Japanese "クレジットカードまたはデビットカード") wrap inside the
+          button on narrow viewports instead of forcing the parent grid
+          column wider than the mobile screen. */}
       <Button
-        className={`w-full py-6 text-lg font-semibold ${activeMethod === "card" ? "hidden" : ""}`}
+        className={`w-full min-h-14 py-2 text-lg font-semibold whitespace-normal break-words h-auto leading-snug ${activeMethod === "card" ? "hidden" : ""}`}
         size="lg"
         style={{ backgroundColor: "hsl(var(--success))", color: "white" }}
         disabled={baseDisabled}

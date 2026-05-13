@@ -297,7 +297,10 @@
     "send": "Send Message",
     "sending": "Sending…",
     "sentTitle": "Message sent!",
-    "sentDesc": "We'll get back to you within 24 hours."
+    "sentDesc": "We'll get back to you within 24 hours.",
+    "nameTooShort": "Name must be at least 2 characters.",
+    "subjectTooShort": "Subject must be at least 3 characters.",
+    "messageTooShort": "Message must be at least 10 characters."
   },
   "faq": {
     "title": "Frequently Asked Questions",
@@ -324,13 +327,13 @@
     "subtitle": "Begin your journey to enhance your cognitive skills and unlock your full potential with our brain training program. Here are the plan details to get started.",
     "planTitle": "Personality report + 7-Day Trial to IQ Booster, brain training platform",
     "badge": "Includes full trial access",
-    "price": "$6.99 today. After the 7-day trial, $29.99 billed every 28 days.",
+    "price": "{{price}} today. After the {{trialDays}}-day trial, {{subscriptionPrice}} billed every {{billingDays}} days.",
     "feature1": "Detailed personality profile & downloadable report",
     "feature2": "In-depth insights into your traits and strengths",
     "feature3": "7-day full access to IQ Booster Brain training",
     "feature4": "Cancel any time",
     "cta": "Start your journey",
-    "renewal": "After a 7 days trial, membership renews automatically at $29.99 every 28 days unless cancelled.",
+    "renewal": "After a {{trialDays}} days trial, membership renews automatically at {{subscriptionPrice}} every {{billingDays}} days unless cancelled.",
     "addonTitle": "Add-on: Career Potential Report",
     "addonBody": "Discover how your personality translates into career success with a personalized roadmap based on your unique type. Includes detailed insights into your natural strengths, decision-making style, and ideal career paths.",
     "f1Title": "Personalized Personality Report",

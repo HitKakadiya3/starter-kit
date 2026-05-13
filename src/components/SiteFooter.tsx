@@ -1,8 +1,9 @@
 import { useTranslation } from 'react-i18next';
-import { useLocalizedNavigate } from '@/hooks/useLocale';
+import { useLocale, useLocalizedNavigate } from '@/hooks/useLocale';
 
 const SiteFooter = () => {
   const navigate = useLocalizedNavigate();
+  const locale = useLocale();
   const { t } = useTranslation();
 
   return (
@@ -59,6 +60,9 @@ const SiteFooter = () => {
                 <li><a href="/privacy-policy" onClick={(e) => { e.preventDefault(); navigate('/privacy-policy'); }} className="text-[hsl(270_80%_80%)] hover:text-white transition-colors">{t('footer.privacyPolicy')}</a></li>
                 <li><a href="/terms-conditions" onClick={(e) => { e.preventDefault(); navigate('/terms-conditions'); }} className="text-[hsl(270_80%_80%)] hover:text-white transition-colors">{t('footer.terms')}</a></li>
                 <li><a href="/subscription-policy" onClick={(e) => { e.preventDefault(); navigate('/subscription-policy'); }} className="text-[hsl(270_80%_80%)] hover:text-white transition-colors">{t('footer.subscriptionPolicy')}</a></li>
+                {locale === 'ja' && (
+                  <li><a href="/legal-notice" onClick={(e) => { e.preventDefault(); navigate('/legal-notice'); }} className="text-[hsl(270_80%_80%)] hover:text-white transition-colors">特定商取引法に基づく表記</a></li>
+                )}
                 <li><a href="/pricing" onClick={(e) => { e.preventDefault(); navigate('/pricing'); }} className="text-[hsl(270_80%_80%)] hover:text-white transition-colors">{t('footer.pricing')}</a></li>
               </ul>
             </div>

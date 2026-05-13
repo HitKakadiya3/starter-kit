@@ -10,6 +10,8 @@ import { useRedirectGuard } from '@/hooks/useRedirectGuard';
 import { usePricing } from '@/hooks/usePricing';
 import { getSession } from '@/lib/session';
 import { pushDataLayer } from '@/lib/analytics';
+import { apiPost } from '@/lib/api';
+import { formatJerusalemDateTime } from '@/lib/datetime';
 import { useLocale, withLocalePrefix } from '@/hooks/useLocale';
 import sarahImg from '@/assets/testimonials/sarah.jpg';
 import marcusImg from '@/assets/testimonials/marcus.jpg';
@@ -230,6 +232,42 @@ const CheckoutPage = () => {
     pushDataLayer({ event: 'PaymentPage', event_category: 'PaymentPage' });
   }, []);
 
+  // Send /save-landing-url-details once per (quiz_result_id, calendar day).
+  // Keyed by qid in localStorage so concurrent quizzes don't collide; date
+  // string gate makes a refresh on the same day a no-op while still firing
+  // again the next day.
+  //
+  // landing_url is the URL of the user's *first* page in this session (set
+  // by captureCampaignParams on the initial navigation), preserving any
+  // utm_*/prc_id/mdid query params from the marketing link. The current
+  // window URL is only used as a fallback if session.landingUrl is missing.
+  useEffect(() => {
+    const sessionNow = getSession();
+    const qid = sessionNow.qidRaw;
+    if (!qid) return;
+
+    const storageKey = `landing_url_sent_${qid}`;
+    const today = formatJerusalemDateTime(Date.now()).slice(0, 10);
+    if (localStorage.getItem(storageKey) === today) return;
+
+    apiPost('questions/save-landing-url-details', {
+      quiz_result_id: String(qid),
+      landing_url_detail: {
+        landing_url: sessionNow.landingUrl ?? window.location.href,
+        landing_time: formatJerusalemDateTime(
+          sessionNow.landingTime ?? Date.now(),
+        ),
+      },
+    })
+      .then(() => {
+        localStorage.setItem(storageKey, today);
+      })
+      .catch(() => {
+        // Non-blocking: marketing-only call, swallow failures so checkout
+        // remains usable if the endpoint is down.
+      });
+  }, [session.qidRaw]);
+
   const trustFeatures = [
     { icon: Users, title: t('checkout.trust.f1Title'), description: t('checkout.trust.f1Desc') },
     { icon: Target, title: t('checkout.trust.f2Title'), description: t('checkout.trust.f2Desc') },
@@ -348,7 +386,7 @@ const CheckoutPage = () => {
         <div className="max-w-6xl mx-auto px-4">
           <div className="grid lg:grid-cols-2 gap-8">
             {/* Left - Features */}
-            <div className="bg-card rounded-2xl p-6 md:p-8 shadow-card border border-border order-2 lg:order-1">
+            <div className="min-w-0 bg-card rounded-2xl p-6 md:p-8 shadow-card border border-border order-2 lg:order-1">
               <div className="flex items-center gap-2 mb-6 bg-muted rounded-full px-4 py-2 text-sm w-fit">
                 <Users className="w-4 h-4 text-primary" />
                 <span className="font-medium text-foreground">{t('checkout.social4M')}</span>
@@ -372,7 +410,7 @@ const CheckoutPage = () => {
             </div>
 
             {/* Right - Payment */}
-            <div id="payment-card" className="order-1 lg:order-2 bg-card rounded-2xl p-6 md:p-8 shadow-card border border-border space-y-4 md:space-y-6">
+            <div id="payment-card" className="min-w-0 order-1 lg:order-2 bg-card rounded-2xl p-6 md:p-8 shadow-card border border-border space-y-4 md:space-y-6">
               <div className="space-y-4">
                 <h3 className="text-xl md:text-2xl font-bold text-foreground">{t('checkout.fullAccessTitle')}</h3>
                 {benefitsList.map((benefit, index) => (
@@ -398,12 +436,12 @@ const CheckoutPage = () => {
               )}
 
               <div className="flex items-baseline justify-between">
-                <span className="text-lg md:text-2xl font-bold text-foreground">{t('checkout.totalToday')}</span>
+                <span className="text-base md:text-2xl font-bold text-foreground">{t('checkout.totalToday')}</span>
                 <div className="flex items-baseline gap-2">
                   {marketingOriginalLabel && (
-                    <span className="text-muted-foreground line-through text-base md:text-lg">({marketingOriginalLabel})</span>
+                    <span className="text-muted-foreground line-through text-sm md:text-lg">({marketingOriginalLabel})</span>
                   )}
-                  <span className="text-2xl md:text-4xl font-bold text-foreground">
+                  <span className="text-xl md:text-4xl font-bold text-foreground">
                     {isLoading || !current ? pricePlaceholder : current.first_sale_price_label}
                   </span>
                 </div>

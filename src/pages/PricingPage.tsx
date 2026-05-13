@@ -77,13 +77,14 @@ const PricingPage = () => {
           </div>
 
           <p className="text-primary font-semibold mb-6">
-            {isLoading || !current ? (
-              pricePlaceholder
-            ) : (
-              <>
-                {current.first_sale_price_label} today. After the {TRIAL_DAYS}-day trial, {current.subscription_price_label} billed every {DEFAULT_SUBSCRIPTION_DAYS} days.
-              </>
-            )}
+            {isLoading || !current
+              ? pricePlaceholder
+              : t('pricing.price', {
+                  price: current.first_sale_price_label,
+                  subscriptionPrice: current.subscription_price_label,
+                  trialDays: TRIAL_DAYS,
+                  billingDays: DEFAULT_SUBSCRIPTION_DAYS,
+                })}
           </p>
 
           <ul className="space-y-3 mb-8">
@@ -105,13 +106,13 @@ const PricingPage = () => {
           </Button>
 
           <p className="text-xs text-muted-foreground text-center mt-4">
-            {isLoading || !current ? (
-              pricePlaceholder
-            ) : (
-              <>
-                After a {TRIAL_DAYS} days trial, membership renews automatically at {current.subscription_price_label} every {DEFAULT_SUBSCRIPTION_DAYS} days unless cancelled.
-              </>
-            )}
+            {isLoading || !current
+              ? pricePlaceholder
+              : t('pricing.renewal', {
+                  subscriptionPrice: current.subscription_price_label,
+                  trialDays: TRIAL_DAYS,
+                  billingDays: DEFAULT_SUBSCRIPTION_DAYS,
+                })}
           </p>
         </div>
 
