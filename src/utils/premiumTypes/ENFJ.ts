@@ -102,12 +102,10 @@ export const ENFJ: PremiumTypeData = {
   topGrowthChallenges: ["Protect your own energy first — you cannot elevate others from an empty well", "Let people see your uncertainty; they trust you more, not less, when you are real", "Build routines that refill you: solitude, movement, honest conversation"],
   famousPeople: [
     { name: "Oprah Winfrey", role: "Media leader", reason: "Charismatic mentor on a global scale; turned empathy into institutional power" },
-    { name: "Saigō Takamori", role: "Samurai & statesman", reason: "Charismatic moral leader who rallied people around shared ideals and loyalty" },
     { name: "Barack Obama", role: "US President", reason: "Inspirational communicator who built coalitions through shared vision" },
     { name: "Maya Angelou", role: "Writer & civil rights leader", reason: "Deep empathy paired with moral clarity and public voice" },
     { name: "Jennifer Lawrence", role: "Actress", reason: "Warm, expressive, emotionally accessible on and off screen" },
-    { name: "Nitobe Inazō", role: "Educator & diplomat", reason: "Bridge-builder who interpreted cultures to one another with warmth and conviction" },
-    { name: "John Cena", role: "Wrestler & actor", reason: "Warm, values-driven public figure known for mentorship and uplifting others" },
+    { name: "Nelson Mandela", role: "Statesman", reason: "Long-arc guide who mentored a nation through transition" },
     { name: "Dumbledore", role: "Fictional (Harry Potter)", reason: "Wise mentor who sees potential in young people and holds the space for it" },
     { name: "Malala Yousafzai", role: "Activist", reason: "Young, values-driven advocate for the education of girls worldwide" },
   ],

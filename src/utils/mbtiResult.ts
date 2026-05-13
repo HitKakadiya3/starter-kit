@@ -1,6 +1,6 @@
 // Persisted MBTI result payload — the single source of truth read by the
 // premium report for dynamic gauges (social battery, stress meter, etc).
-import { Scores, calculateType, calculatePercentages, calculateIdentity, AtScore, initialAtScore } from './scoring';
+import { Scores, calculateType, calculatePercentages } from './scoring';
 
 export const MBTI_RESULT_KEY = 'mbti.result';
 
@@ -33,43 +33,32 @@ export function extraversionPercent(scores: Scores): number {
 }
 
 /** Build a persistable result payload from raw quiz scores. */
-export function buildResult(scores: Scores, atScore: AtScore = initialAtScore): MbtiResult {
+export function buildResult(scores: Scores): MbtiResult {
   const code = calculateType(scores);
   const pcts = calculatePercentages(scores);
 
-  // Always derive the letter from the 4-letter code (so SN→"N" not "Intuition"[0]="I").
-  const traitFor = (dim: string, letter: string): MbtiTrait => {
+  const trait = (dim: string): MbtiTrait => {
     const tp = pcts.find(p => p.dim === dim)!;
-    return { letter, percent: tp.percentage };
+    return { letter: tp.dominantLabel[0], percent: tp.percentage };
   };
 
-  // A/T axis — signed-Likert. turbulentPercent in [0,100], 100 = most Turbulent, 50 = tie.
-  const at = calculateIdentity(atScore);
-  const identity: 'A' | 'T' = at.letter;
-  const turbulentPercent = at.letter === 'T' ? at.percent : 100 - at.percent;
+  // The quiz does not yet measure A/T — default to a neutral Assertive.
+  // Anything reading this can override with a real score later.
+  const identity: 'A' | 'T' = 'A';
+  const turbulentPercent = 50;
 
   return {
     code,
     traits: {
-      EI: traitFor('E/I', code[0]),
-      SN: traitFor('S/N', code[1]),
-      TF: traitFor('T/F', code[2]),
-      JP: traitFor('J/P', code[3]),
+      EI: { letter: code[0], percent: extraversionPercent(scores) },
+      SN: trait('S/N'),
+      TF: trait('T/F'),
+      JP: trait('J/P'),
     },
     identity,
     turbulentPercent,
     completedAt: new Date().toISOString(),
   };
-}
-
-export function persistResult(scores: Scores, atScore: AtScore = initialAtScore): MbtiResult {
-  const result = buildResult(scores, atScore);
-  try {
-    localStorage.setItem(MBTI_RESULT_KEY, JSON.stringify(result));
-  } catch {
-    // ignore (private mode / quota)
-  }
-  return result;
 }
 
 export function readResult(): MbtiResult | null {

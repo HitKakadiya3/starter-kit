@@ -1,8 +1,7 @@
 import { useEffect, useState } from 'react';
-import { useLocation } from 'react-router-dom';
-import { useTranslation } from 'react-i18next';
-import { useLocalizedNavigate } from '@/hooks/useLocale';
-import type { Scores } from '@/utils/scoring';
+import { useLocation, useNavigate } from 'react-router-dom';
+import type { QuizAnswer } from '@/lib/apiTypes';
+import { withPromoParams } from '@/lib/promoUrl';
 
 const allLetters: Record<number, string[]> = {
   0: ['E', 'I'],
@@ -11,46 +10,51 @@ const allLetters: Record<number, string[]> = {
   3: ['J', 'P'],
 };
 
+interface CalculatingRouteState {
+  answers: QuizAnswer[];
+  startTime: number;
+  endTime: number;
+}
+
 const CalculatingPage = () => {
   const location = useLocation();
-  const navigate = useLocalizedNavigate();
-  const { t } = useTranslation();
-  const scores = (location.state as { scores: Scores } | null)?.scores;
+  const navigate = useNavigate();
+  const state = location.state as CalculatingRouteState | null;
 
   const [progress, setProgress] = useState(0);
-  const [cycleIndex, setCycleIndex] = useState(0);
+  const [, setCycleIndex] = useState(0);
   const [displayLetters, setDisplayLetters] = useState(['E', 'S', 'T', 'J']);
 
   useEffect(() => {
-    if (!scores) {
-      navigate('/');
+    if (!state?.answers) {
+      navigate('/', { replace: true });
       return;
     }
 
     // Cycle letters rapidly
     const letterInterval = setInterval(() => {
-      setCycleIndex(prev => prev + 1);
-      setDisplayLetters(prev =>
+      setCycleIndex((prev) => prev + 1);
+      setDisplayLetters((prev) =>
         prev.map((_, i) => {
           const options = allLetters[i];
           return options[Math.floor(Math.random() * options.length)];
-        })
+        }),
       );
     }, 150);
 
     // Progress bar
     const progressInterval = setInterval(() => {
-      setProgress(prev => {
+      setProgress((prev) => {
         if (prev >= 100) return 100;
         return prev + 1.0;
       });
     }, 80);
 
-    // Navigate to results after ~8 seconds
+    // Navigate after ~8 seconds
     const timeout = setTimeout(() => {
       clearInterval(letterInterval);
       clearInterval(progressInterval);
-      navigate('/email', { state: { scores } });
+      navigate(withPromoParams('/email'), { state, replace: false });
     }, 8000);
 
     return () => {
@@ -58,9 +62,9 @@ const CalculatingPage = () => {
       clearInterval(progressInterval);
       clearTimeout(timeout);
     };
-  }, [scores, navigate]);
+  }, [state, navigate]);
 
-  if (!scores) return null;
+  if (!state?.answers) return null;
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-background via-background to-accent/30 flex flex-col items-center justify-center px-4">
@@ -113,7 +117,7 @@ const CalculatingPage = () => {
 
         {/* Text */}
         <p className="text-sm md:text-base text-muted-foreground text-center max-w-md leading-relaxed">
-          {t('calculating.body')}
+          We're analyzing your answers to reveal your personality type and build your personalized profile report.
         </p>
       </div>
     </div>

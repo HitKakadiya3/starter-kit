@@ -12,7 +12,6 @@
     "moduleDetection": "force",
     "moduleResolution": "bundler",
     "noEmit": true,
-    "resolveJsonModule": true,
     "noFallthroughCasesInSwitch": false,
     "noImplicitAny": false,
     "noUnusedLocals": false,
@@ -24,7 +23,6 @@
     },
     "skipLibCheck": true,
     "strict": false,
-    "strictNullChecks": true,
     "target": "ES2020",
     "types": [
       "vitest/globals"

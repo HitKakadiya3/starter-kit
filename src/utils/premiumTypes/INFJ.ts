@@ -102,11 +102,9 @@ export const INFJ: PremiumTypeData = {
   topGrowthChallenges: ["Say the hard thing sooner — withheld truth becomes slow-burning resentment", "Protect your energy: a clear no is a deeper kindness than a reluctant yes", "Share your inner world out loud; the people who love you cannot read your mind"],
   famousPeople: [
     { name: "Mahatma Gandhi", role: "Civil rights leader", reason: "Quiet, principled, visionary leadership that reshaped a nation" },
-    { name: "Kenji Mizoguchi", role: "Filmmaker", reason: "Visionary storyteller of human suffering with deep empathy and moral conviction" },
     { name: "Martin Luther King Jr.", role: "Civil rights leader", reason: "Moral vision combined with extraordinary moral clarity and courage" },
     { name: "Nelson Mandela", role: "Statesman", reason: "Long-arc leader who led by principle and personal example" },
     { name: "Carl Jung", role: "Psychologist", reason: "Depth psychologist who mapped the inner life for a century of readers" },
-    { name: "Kūkai", role: "Buddhist monk & scholar", reason: "Mystic philosopher who built an enduring spiritual system from inner insight" },
     { name: "Jane Goodall", role: "Primatologist & activist", reason: "Patient, empathic, values-driven lifelong commitment to a single cause" },
     { name: "Dostoevsky", role: "Novelist", reason: "Psychological depth and moral seriousness at the highest literary level" },
     { name: "Atticus Finch", role: "Fictional (To Kill a Mockingbird)", reason: "Quiet, principled, morally clear in a world that was not" },

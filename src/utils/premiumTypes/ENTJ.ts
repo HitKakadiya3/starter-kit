@@ -102,11 +102,9 @@ export const ENTJ: PremiumTypeData = {
   topGrowthChallenges: ["Before you correct, ask if the person needs a coach, a colleague, or just a human in the moment", "Delegate fully — your job is to build leaders, not to be the only competent person in the room", "Make space for your own emotions; the feelings you ignore eventually run the decisions"],
   famousPeople: [
     { name: "Steve Jobs", role: "Co-founder of Apple", reason: "Visionary, demanding, ruthless about quality; set long-term direction and shipped it" },
-    { name: "Itō Hirobumi", role: "First Prime Minister of Japan", reason: "Strategic architect of a national constitution and modern political system" },
     { name: "Margaret Thatcher", role: "Former UK Prime Minister", reason: "Decisive, strategic, unyielding once committed to a course" },
     { name: "Gordon Ramsay", role: "Chef & television host", reason: "Direct, results-oriented, no patience for mediocrity" },
     { name: "Franklin D. Roosevelt", role: "US President", reason: "Bold, strategic, led a nation through crisis with long-range plans" },
-    { name: "Minamoto no Yoritomo", role: "Founder of the Kamakura shogunate", reason: "Decisive organiser who established a durable command structure that ruled for centuries" },
     { name: "Kamala Harris", role: "Politician", reason: "Prosecutorial sharpness, public leadership, clear ambition" },
     { name: "Miranda Priestly", role: "Fictional (The Devil Wears Prada)", reason: "Commanding, high-standards, uncompromising executive energy" },
     { name: "Napoleon Bonaparte", role: "General & emperor", reason: "Decisive commander, strategic thinker, relentless executor" },

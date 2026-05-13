@@ -102,11 +102,9 @@ export const ISFJ: PremiumTypeData = {
   topGrowthChallenges: ["Practice saying a clear no — your yes becomes more valuable when it is chosen freely", "Name your own needs out loud; the people who love you cannot read your mind", "Invest in your own growth, not just the growth of everyone around you"],
   famousPeople: [
     { name: "Mother Teresa", role: "Humanitarian", reason: "Lifelong quiet service; relentless practical care for the poor" },
-    { name: "Setsuko Hara", role: "Actress", reason: "Quietly devoted, gracious, and self-effacing presence on and off screen" },
     { name: "Rosa Parks", role: "Civil rights pioneer", reason: "Quiet, principled, immovable on what she knew to be right" },
     { name: "Queen Elizabeth II", role: "Monarch", reason: "Seven decades of patient, dutiful service to her role" },
     { name: "Jimmy Stewart", role: "Actor", reason: "Warm, earnest, dependable; embodied everyday decency on screen" },
-    { name: "Empress Kōjun", role: "Empress of Japan", reason: "Reserved, dutiful, and steadfastly supportive throughout decades of service" },
     { name: "Kate Middleton", role: "Princess of Wales", reason: "Composed, service-oriented, attentive to tradition and family" },
     { name: "Samwise Gamgee", role: "Fictional (Lord of the Rings)", reason: "Steadfast friend, quietly carried the weight of the journey" },
     { name: "Beth March", role: "Fictional (Little Women)", reason: "Gentle, caring, devoted to family and quiet service" },

@@ -102,11 +102,9 @@ export const INTP: PremiumTypeData = {
   topGrowthChallenges: ["Finish more than you start — every completed project teaches more than three abandoned ones", "Practice naming your feelings out loud, even when it feels unnecessary; the people who love you need the translation", "Commit to one path long enough to master it before the next shiny question arrives"],
   famousPeople: [
     { name: "Albert Einstein", role: "Theoretical physicist", reason: "Reframed physics from first principles, comfortable with deep abstraction and long solitude" },
-    { name: "Hideki Yukawa", role: "Theoretical physicist", reason: "Independent thinker who derived a foundational theory from pure conceptual reasoning" },
     { name: "Charles Darwin", role: "Naturalist", reason: "Patient, theoretical, pieced together a framework that reshaped biology" },
     { name: "Marie Curie", role: "Physicist & chemist", reason: "Intense, self-directed investigator, pursued the problem rather than the recognition" },
     { name: "Bill Gates", role: "Technologist", reason: "Early INTP tinkerer before becoming a public figure; loves systems and deep reading" },
-    { name: "Mori Ōgai", role: "Writer & army surgeon", reason: "Polymath who pursued ideas across literature, medicine, and philosophy with cool analysis" },
     { name: "René Descartes", role: "Philosopher", reason: "Reasoned from the ground up, questioned everything, built from axioms" },
     { name: "Abraham Lincoln", role: "US President", reason: "Thoughtful, analytical, famously patient in reasoning and decision-making" },
     { name: "Gregory House", role: "Fictional (House M.D.)", reason: "Brilliant, logical, socially prickly, driven by the puzzle more than the praise" },
