@@ -67,6 +67,7 @@ const AboutUsPage = React.lazy(() => import("./pages/AboutUsPage"));
 const FAQPage = React.lazy(() => import("./pages/FAQPage"));
 const PremiumReportPage = React.lazy(() => import("./pages/PremiumReportPage"));
 const CareerReportPage = React.lazy(() => import("./pages/CareerReportPage"));
+const LegalNoticePage = React.lazy(() => import("./pages/LegalNoticePage"));
 
 const queryClient = new QueryClient();
 
@@ -103,6 +104,7 @@ const AppRoutes = () => (
     <Route path="faq" element={<FAQPage />} />
     <Route path="premium-report" element={<PremiumReportPage />} />
     <Route path="career-report" element={<CareerReportPage />} />
+    <Route path="legal-notice" element={<LegalNoticePage />} />
     <Route path="*" element={<NotFound />} />
   </Routes>
 );
