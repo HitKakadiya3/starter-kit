@@ -102,9 +102,11 @@ export const ENTP: PremiumTypeData = {
   topGrowthChallenges: ["Finish the thing before you start the next thing — half-done projects teach less than one completed one", "Notice when your debate is costing you connection, and soften on purpose", "Schedule boring maintenance — health, finances, relationships — with the same energy you give to new ideas"],
   famousPeople: [
     { name: "Thomas Edison", role: "Inventor", reason: "Endless ideas, rapid prototyping, relentless reinvention" },
+    { name: "Fukuzawa Yukichi", role: "Educator & writer", reason: "Idea-rich reformer who debated tradition and championed new ways of thinking" },
     { name: "Leonardo da Vinci", role: "Polymath", reason: "Crossed fields constantly; pursued every interesting problem" },
     { name: "Mark Twain", role: "Writer", reason: "Witty, provocative, skeptical of every cherished idea of his time" },
     { name: "Richard Feynman", role: "Physicist", reason: "Playful, questioning, refused to accept anything he had not re-derived" },
+    { name: "Katsu Kaishū", role: "Statesman & naval officer", reason: "Witty, persuasive negotiator who reframed conflicts and brokered unlikely deals" },
     { name: "Sacha Baron Cohen", role: "Actor & comedian", reason: "Pushes social boundaries to reveal truth; performs with analytical depth" },
     { name: "Tyrion Lannister", role: "Fictional (Game of Thrones)", reason: "Witty, articulate, strategic, and profoundly contrarian" },
     { name: "Benjamin Franklin", role: "Inventor & statesman", reason: "Polymath who invented, wrote, and argued his way into history" },

@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next';
 import intjImg from '@/assets/personalities-home/intj-strategist.png';
 import intpImg from '@/assets/personalities-home/intp-thinker.png';
 import entjImg from '@/assets/personalities-home/entj-leader.png';
@@ -51,7 +52,9 @@ const personalities = [
   { code: 'ESFP', name: 'The Performer', img: esfpImg },
 ];
 
+
 const PersonalityMarquee = () => {
+  const { t } = useTranslation();
   return (
     <div className="w-full overflow-hidden py-8 relative">
       <div className="absolute left-0 top-0 bottom-0 z-10 pointer-events-none" style={{ width: 'calc((100% - 72rem) / 2 + 2rem)', minWidth: '1rem', background: 'linear-gradient(to right, hsl(var(--background)), transparent)' }} />
@@ -74,7 +77,7 @@ const PersonalityMarquee = () => {
             </div>
             <div className="text-center">
               <p className="text-xs md:text-sm font-bold text-foreground">{p.code}</p>
-              <p className="text-[10px] md:text-xs text-muted-foreground">{p.name}</p>
+              <p className="text-[10px] md:text-xs text-muted-foreground">{t(`sixteenTypes.labels.${p.code}`, p.name)}</p>
             </div>
           </div>
         ))}

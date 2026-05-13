@@ -2,7 +2,7 @@
  * Unit tests for CardForm after the switch from CardElement to
  * PaymentElement. PaymentElement is a Stripe iframe black-box; the
  * component's observable behaviour is:
- *   - Pay button gating on `complete` + `consented` + `submitting`.
+ *   - Pay button gating on `complete` + `submitting`.
  *   - Pay button label text.
  *   - On click, calls `stripe.confirmPayment({ elements, confirmParams })`.
  *   - Surfaces errors and invokes `onSuccess(id)` on inline success.
@@ -12,6 +12,10 @@ import { act, render, screen } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import type { StripePaymentElementChangeEvent } from "@stripe/stripe-js";
+
+// Side-effect import: initialises the shared `i18next` instance so
+// `useTranslation` returns real strings instead of returning the raw keys.
+import "@/i18n";
 
 import { CardForm } from "./CardForm";
 
@@ -42,9 +46,7 @@ vi.mock("@stripe/react-stripe-js", () => ({
 const baseProps = {
   clientSecret: "cs_test",
   email: "a@b.co",
-  priceLabel: "$4.99",
   submitting: false,
-  consented: true,
   returnUrl: "http://localhost/checkout?qid=42",
   onSuccess: vi.fn(),
   onError: vi.fn(),
@@ -77,20 +79,6 @@ describe("<CardForm>", () => {
 
     const button = screen.getByRole("button", { name: /pay \$4\.99/i });
     expect(button).not.toBeDisabled();
-  });
-
-  it("keeps Pay disabled when consented is false, even with complete", () => {
-    render(<CardForm {...baseProps} consented={false} />);
-
-    act(() => {
-      lastOnChange?.({
-        complete: true,
-      } as StripePaymentElementChangeEvent);
-    });
-
-    expect(
-      screen.getByRole("button", { name: /pay \$4\.99/i }),
-    ).toBeDisabled();
   });
 
   it("shows 'Processing…' and disables Pay when submitting is true", () => {

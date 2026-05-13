@@ -8,7 +8,8 @@
     "iqBoosterLogin": "IQ Booster Login",
     "language": "English",
     "learnMore": "Learn more",
-    "backToHome": "Back to home"
+    "backToHome": "Back to home",
+    "somethingWentWrong": "Something went wrong. Please try again."
   },
   "nav": {
     "sixteenTypes": "16 Types",
@@ -86,7 +87,13 @@
     "duration": "5-minute test"
   },
   "quiz": {
-    "stepLabel": "Step {{current}} of {{total}}"
+    "stepLabel": "Step {{current}} of {{total}}",
+    "loadingQuestions": "Loading your questions…",
+    "errorTitle": "We couldn't load the quiz.",
+    "errorBody": "Please try again.",
+    "unavailableTitle": "This test isn't available right now",
+    "retry": "Retry",
+    "tryAgain": "Try Again"
   },
   "scale": {
     "stronglyAgree": "Strongly Agree",
@@ -141,9 +148,11 @@
       "b5": "7-day trial to IQ Booster – a personalized brain training program tailored specifically to you"
     },
     "discountTitle": "Discount Applied!",
-    "discountBody": "You're saving 87%",
+    "discountBody": "You're saving {{percent}}%",
     "totalToday": "Total Today:",
     "creditCard": "Credit or debit card",
+    "changeMethod": "Change method",
+    "pay": "Pay",
     "secure": "Your payment is secure and encrypted",
     "legal": "By completing your purchase, you agree to pay $4.99 for your detailed personality type report and 7-day access to IQ Booster (brain-training platform). After 7 days, unless you cancel, your IQ Booster subscription will begin and renew at $29.99 every 4 weeks until canceled. You also agree to the",
     "termsOfService": "Terms of Service",
@@ -176,7 +185,7 @@
       "a3": "Our customer support team is available 24/7 via email and live chat. You can also visit our help center for instant answers to common questions."
     },
     "secureNote": "Your payment is secure and encrypted",
-    "disclaimer": "By completing your purchase, you agree to pay $4.99 for your detailed personality type report and 7-day access to IQ Booster (brain-training platform). After 7 days, unless you cancel, your IQ Booster subscription will begin and renew at $29.99 every 4 weeks until canceled. You also agree to the {{terms}}, {{privacy}}, and {{subscription}}. You can cancel at any time from the IQ Booster dashboard or by contacting info@iqbooster.org.",
+    "disclaimer": "By completing your purchase, you agree to pay {{price}} for your detailed personality type report and 7-day access to IQ Booster (brain-training platform). After 7 days, unless you cancel, your IQ Booster subscription will begin and renew at {{subscriptionPrice}} every 4 weeks until canceled. You also agree to the <terms>Terms of Service</terms>, <privacy>Privacy Policy</privacy>, and <subscription>Subscription Policy</subscription>. You can cancel at any time from the IQ Booster dashboard or by contacting <email>info@iqbooster.org</email>.",
     "termsLink": "Terms of Service",
     "privacyLink": "Privacy Policy",
     "subscriptionLink": "Subscription Policy",
@@ -207,12 +216,16 @@
   "crossSell": {
     "paymentCompleted": "Payment Completed",
     "reportReady": "Your Personality report is ready",
-    "description": "After reviewing your personality profile, we'd like to offer you the opportunity to unlock a deeper understanding of your career potential for just $9.99. This premium report is based on your unique personality type and reveals how your natural strengths, decision-making style, and communication patterns translate into real-world career success.",
+    "description": "After reviewing your personality profile, we'd like to offer you the opportunity to unlock a deeper understanding of your career potential for just <price/>. This premium report is based on your unique personality type and reveals how your natural strengths, decision-making style, and communication patterns translate into real-world career success.",
     "productTitle": "Career Potential Report",
     "productBody": "Discover how your personality translates into career success with a personalized roadmap based on your unique type.",
     "confirm": "Confirm and get career potential report",
     "skip": "Skip and get personality report only",
-    "disclaimer": "*You will be charged for the add-on services or products selected at the time of purchase."
+    "disclaimer": "*You will be charged for the add-on services or products selected at the time of purchase.",
+    "compulsoryDisclaimer": "This add-on is required to continue.",
+    "pricingError": "Couldn't load pricing. Please try again.",
+    "retry": "Retry",
+    "chargeError": "Card on file couldn't be charged. Please continue without the add-on."
   },
   "details": {
     "title": "You're almost done",
@@ -223,6 +236,14 @@
     "generate": "Generate report",
     "privacy": "* All data submitted is confidential and it will never be shared with third parties",
     "generating": "Generating your personality report…"
+  },
+  "report": {
+    "error": {
+      "title": "We couldn't load your report",
+      "body": "Please try again. If the problem persists, contact support with quiz id {{qid}}.",
+      "retry": "Try again",
+      "back": "Back to home"
+    }
   },
   "footer": {
     "support": "Customer Support",

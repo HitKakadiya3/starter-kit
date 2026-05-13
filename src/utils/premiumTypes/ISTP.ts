@@ -102,9 +102,11 @@ export const ISTP: PremiumTypeData = {
   topGrowthChallenges: ["Practice saying the warm thing out loud — your people need to hear it", "Commit to one important thing past the point where it gets boring; depth pays", "Notice when you are withdrawing to avoid feeling, and choose to stay in the room"],
   famousPeople: [
     { name: "Clint Eastwood", role: "Actor & director", reason: "Calm, laconic, competent; the classic ISTP screen presence" },
+    { name: "Masutatsu Ōyama", role: "Karate master", reason: "Solitary, disciplined martial artist who tested himself through relentless physical practice" },
     { name: "Bruce Lee", role: "Martial artist", reason: "Disciplined, analytical, physically masterful, self-directed" },
     { name: "Amelia Earhart", role: "Aviator", reason: "Independent, bold, quietly competent in the air and on the ground" },
     { name: "Tom Cruise", role: "Actor", reason: "Known for doing his own stunts; physical, driven, detail-obsessed" },
+    { name: "Minamoto no Yoshitsune", role: "Samurai general", reason: "Tactically brilliant, improvisational warrior with cool battlefield instincts" },
     { name: "Michael Jordan", role: "Basketball great", reason: "Competitive, present under pressure, relentless practice" },
     { name: "Indiana Jones", role: "Fictional", reason: "Competent, resourceful, calm-under-pressure adventurer" },
     { name: "James Bond", role: "Fictional", reason: "Cool-headed, analytical, physically adept, emotionally private" },

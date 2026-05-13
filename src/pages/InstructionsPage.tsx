@@ -1,11 +1,13 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import maleAvatar from "@/assets/older-male-avatar.png";
 import femaleAvatar from "@/assets/older-female-avatar.png";
+import { useLocalizedNavigate } from "@/hooks/useLocale";
 import { withPromoParams } from "@/lib/promoUrl";
 
 const InstructionsPage = () => {
-  const navigate = useNavigate();
+  const navigate = useLocalizedNavigate();
+  const { t } = useTranslation();
   const [selected, setSelected] = useState<string | null>(null);
 
   const handleSelect = (gender: string) => {
@@ -45,38 +47,32 @@ const InstructionsPage = () => {
             <div className="flex flex-col" style={{ lineHeight: '1.1' }}>
               <span className="text-lg md:text-2xl font-extrabold uppercase tracking-[0.06em]">
                 <span style={{ color: 'hsl(270 50% 45%)' }}>16</span>
-                <span className="text-foreground"> Types Test</span>
+                <span className="text-foreground"> {t('brand.name')}</span>
               </span>
-              <span className="text-[9px] md:text-[11px] font-medium tracking-[0.25em] text-muted-foreground">Inspired by MBTI Theory</span>
+              <span className="text-[9px] md:text-[11px] font-medium tracking-[0.25em] text-muted-foreground">{t('brand.tagline')}</span>
             </div>
           </div>
-          <button
-            onClick={() => navigate('/calculating', { state: { scores: { E: 8, I: 4, S: 3, N: 9, T: 7, F: 5, J: 6, P: 6 } } })}
-            className="ml-auto text-sm font-medium text-muted-foreground hover:text-primary transition-colors"
-          >
-            Checkout
-          </button>
         </div>
       </nav>
 
       {/* Centered content */}
       <div className="flex-1 flex flex-col items-center justify-start px-4 pt-8 md:pt-10 pb-6 md:pb-12">
         <div className="max-w-lg w-full bg-transparent md:bg-card border-0 md:border md:border-border rounded-none md:rounded-2xl shadow-none md:shadow-soft p-0 md:p-10 text-center space-y-5 md:space-y-8">
-          <h1 className="text-2xl font-bold text-primary">Before you start</h1>
+          <h1 className="text-2xl font-bold text-primary">{t('instructions.title')}</h1>
 
           <p className="text-foreground text-base leading-relaxed -mt-4">
-            Pick the answer that feels most like you.<br />
-            The most natural answers reveal your true type.
+            {t('instructions.intro')}<br />
+            {t('instructions.intro2')}
           </p>
 
           <hr className="border-border" />
 
-          <p className="text-base font-bold text-muted-foreground">Please select your gender:</p>
+          <p className="text-base font-bold text-muted-foreground">{t('instructions.selectGender')}</p>
 
           <div className="flex gap-4 md:gap-6 justify-center">
             {[
-              { key: "male", label: "Male", avatar: maleAvatar, color: "text-primary", bg: "bg-[hsl(210_60%_92%)]" },
-              { key: "female", label: "Female", avatar: femaleAvatar, color: "text-orange-400", bg: "bg-[hsl(25_85%_90%)]" },
+              { key: "male", label: t('instructions.male'), avatar: maleAvatar, color: "text-primary", bg: "bg-[hsl(210_60%_92%)]" },
+              { key: "female", label: t('instructions.female'), avatar: femaleAvatar, color: "text-orange-400", bg: "bg-[hsl(25_85%_90%)]" },
             ].map(({ key, label, avatar, color, bg }) => (
               <button
                 key={key}
@@ -97,7 +93,7 @@ const InstructionsPage = () => {
             ))}
           </div>
         </div>
-        <p className="text-sm text-muted-foreground mt-4">5-minute test</p>
+        <p className="text-sm text-muted-foreground mt-4">{t('instructions.duration')}</p>
       </div>
     </div>
   );

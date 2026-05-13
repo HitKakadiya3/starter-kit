@@ -11,14 +11,18 @@
  */
 
 import { useEffect, useState } from "react";
-import { useNavigate, useSearchParams } from "react-router-dom";
+import { useSearchParams } from "react-router-dom";
 
+import { useLocalizedNavigate } from "@/hooks/useLocale";
 import { apiPost } from "@/lib/api";
 import type { PricingInfo } from "@/lib/apiTypes";
 import { withPromoParams } from "@/lib/promoUrl";
-import { resolveRedirect } from "@/lib/redirectRouter";
+import {
+  qidParamForRoute,
+  resolveEffectiveRedirect,
+  resolveRedirect,
+} from "@/lib/redirectRouter";
 import { getSession, patchSession } from "@/lib/session";
-import type { FunnelSession } from "@/lib/session";
 
 interface QuizResultResponse {
   quiz_result_id: number;
@@ -28,53 +32,46 @@ interface QuizResultResponse {
   redirect_page?: string;
 }
 
-/**
- * Override lingering backend redirect_page values when a client-only state
- * flag proves the user has already passed that step. The backend's
- * `/questions/results` only advances state when a state-mutating endpoint
- * succeeds, so between (say) a successful `/customer/update` and the next
- * backend action the server still reports `CUSTOMER_DETAILS_PAGE` — which
- * would bounce a refreshed `/results` page backward without the override.
- *
- * Rules:
- *   CROSS_SELL_OFFER_PAGE + crossSellResolved → CUSTOMER_DETAILS_PAGE
- *     (accept or skip: both set `crossSellResolved` and both route to
- *     /details; skip is purely client-side, accept has already been
- *     confirmed to backend via the cross-sale confirm endpoint)
- *   CUSTOMER_DETAILS_PAGE + customerUpdateSubmitted → THANK_YOU_PAGE
- *     (post-update resume bounce-forward)
- *
- * All other redirect values are returned unchanged.
- */
-function resolveEffectiveRedirect(
-  serverRedirect: string | undefined,
-  session: FunnelSession,
-): string | undefined {
-  if (
-    serverRedirect === "CROSS_SELL_OFFER_PAGE" &&
-    session.crossSellResolved
-  ) {
-    return "CUSTOMER_DETAILS_PAGE";
-  }
-  if (
-    serverRedirect === "CUSTOMER_DETAILS_PAGE" &&
-    session.customerUpdateSubmitted
-  ) {
-    return "THANK_YOU_PAGE";
-  }
-  return serverRedirect;
-}
-
 export function useRedirectGuard(currentRoute: string): boolean {
   const [qid] = useSearchParams();
-  const navigate = useNavigate();
+  // Locale-aware navigate so the guard preserves the `/ja` prefix when it
+  // bounces a user from `/ja/cross-sell` back to checkout. Pages still pass
+  // the locale-less `currentRoute` (e.g. `/cross-sell`) — the comparison
+  // below is between two locale-less route keys, and the navigate helper
+  // re-applies the prefix when the URL changes.
+  const navigate = useLocalizedNavigate();
   const [ready, setReady] = useState(false);
 
   useEffect(() => {
+    const urlQid = qid.get("qid");
+
+    // `/career-report` doesn't participate in the redirect-page state machine
+    // — it's reached only after `/results`, and `/questions/results` would
+    // route the user back to `/results`. Bridge the URL qid into session
+    // (so `useCustomerThankyou` can read it) and mark ready immediately.
+    if (currentRoute === "/career-report") {
+      if (urlQid && !/^\d+$/.test(urlQid)) {
+        patchSession({ qidEncrypted: urlQid });
+      }
+      setReady(true);
+      return;
+    }
+
+    // `/results` carries the *encrypted* qid in the URL (see
+    // `qidParamForRoute`). A fresh browser tab has no session, so the URL is
+    // the sole source of truth — but `/questions/results` only accepts the
+    // raw integer id. Persist the encrypted form for `useCustomerThankyou`
+    // and short-circuit ready: the subsequent `customer/thankyou` call
+    // doubles as the validity check (4xx → the page's existing error state).
+    if (currentRoute === "/results" && urlQid && !/^\d+$/.test(urlQid)) {
+      patchSession({ qidEncrypted: urlQid });
+      setReady(true);
+      return;
+    }
+
     // URL carries the raw integer quiz_result_id. /questions/results rejects
     // anything non-numeric. Session fallback is the cached raw qid from an
     // earlier submit in the same tab.
-    const urlQid = qid.get("qid");
     const numericQid =
       urlQid && /^\d+$/.test(urlQid) ? Number(urlQid) : getSession().qidRaw;
     if (!numericQid) {
@@ -100,7 +97,12 @@ export function useRedirectGuard(currentRoute: string): boolean {
         );
         const expected = resolveRedirect(effectiveRedirect);
         if (expected !== currentRoute) {
-          navigate(withPromoParams(`${expected}?qid=${data.quiz_result_id}`), {
+          const qidParam = qidParamForRoute(
+            expected,
+            data.quiz_result_id,
+            data.encrypted_quiz_result_id,
+          );
+          navigate(withPromoParams(`${expected}?qid=${qidParam}`), {
             replace: true,
           });
         } else {

@@ -182,13 +182,56 @@ describe("useRedirectGuard", () => {
     expect(screen.getByTestId("ready").textContent).toBe("false");
   });
 
-  it("navigates to / when the URL qid is not numeric and no session qidRaw exists", async () => {
+  it("navigates to / when the URL qid is not numeric and no session qidRaw exists (non-/results route)", async () => {
     renderAt("/checkout?qid=NOT_NUMERIC", "/checkout");
 
     await waitFor(() => {
       expect(navigateMock).toHaveBeenCalledWith("/", { replace: true });
     });
     expect(apiPostMock).not.toHaveBeenCalled();
+  });
+
+  it("treats a non-numeric URL qid on /results as the encrypted id (fresh browser, empty session)", async () => {
+    renderAt("/results?qid=1AYRxE8X7L9Emdr3", "/results");
+
+    await waitFor(() => {
+      expect(screen.getByTestId("ready").textContent).toBe("true");
+    });
+
+    // The encrypted id is persisted so useCustomerThankyou can pick it up.
+    expect(patchCalls).toContainEqual({ qidEncrypted: "1AYRxE8X7L9Emdr3" });
+    // /questions/results is skipped — backend rejects encrypted ids there,
+    // and customer/thankyou (called by the page) is the validity check.
+    expect(apiPostMock).not.toHaveBeenCalled();
+    expect(navigateMock).not.toHaveBeenCalled();
+  });
+
+  it("/career-report: persists URL qid as encrypted and marks ready without an api call", async () => {
+    renderAt("/career-report?qid=1AYRxE8X7L9Emdr3", "/career-report");
+
+    await waitFor(() => {
+      expect(screen.getByTestId("ready").textContent).toBe("true");
+    });
+
+    expect(patchCalls).toContainEqual({ qidEncrypted: "1AYRxE8X7L9Emdr3" });
+    // /career-report is past the redirect-page state machine — calling
+    // /questions/results would just bounce the user back to /results.
+    expect(apiPostMock).not.toHaveBeenCalled();
+    expect(navigateMock).not.toHaveBeenCalled();
+  });
+
+  it("/career-report: marks ready with no API call even when URL qid is missing (session.qidEncrypted carries the id)", async () => {
+    sessionState.qidEncrypted = "ALREADY_THERE";
+    renderAt("/career-report", "/career-report");
+
+    await waitFor(() => {
+      expect(screen.getByTestId("ready").textContent).toBe("true");
+    });
+
+    // No URL qid → no patch (existing session.qidEncrypted is reused).
+    expect(patchCalls).toHaveLength(0);
+    expect(apiPostMock).not.toHaveBeenCalled();
+    expect(navigateMock).not.toHaveBeenCalled();
   });
 
   it("forwards CROSS_SELL_OFFER_PAGE → CUSTOMER_DETAILS_PAGE for the skip path (same as accept)", async () => {

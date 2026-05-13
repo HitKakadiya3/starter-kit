@@ -102,9 +102,11 @@ export const INTJ: PremiumTypeData = {
   topGrowthChallenges: ["Practice sharing your reasoning out loud, not just your conclusion — people follow ideas they understand", "When you feel dismissive of an emotional argument, pause and ask what information you might be missing", "Protect time for rest, movement, and beauty — they are not distractions from your work, they fuel it"],
   famousPeople: [
     { name: "Elon Musk", role: "Engineer & entrepreneur", reason: "Long-horizon planning, contrarian bets, system redesign of entire industries" },
+    { name: "Masaru Ibuka", role: "Sony co-founder", reason: "Long-horizon engineer who blueprinted decades of consumer technology strategy" },
     { name: "Isaac Newton", role: "Scientist & mathematician", reason: "Relentless self-directed study, theory-building from first principles" },
     { name: "Friedrich Nietzsche", role: "Philosopher", reason: "Independent thinker, systematic critique of inherited assumptions" },
     { name: "Michelle Obama", role: "Former US First Lady", reason: "Strategic, composed, long-term focused, privately warm" },
+    { name: "Takeda Shingen", role: "Sengoku daimyō", reason: "Strategic mastermind known for meticulous planning and patient long-term campaigns" },
     { name: "Nikola Tesla", role: "Inventor", reason: "Highly internal, visionary, deeply focused on long-term technological futures" },
     { name: "Stephen Hawking", role: "Physicist", reason: "Independent thinker with disciplined analytical rigour" },
     { name: "Gandalf", role: "Fictional (Lord of the Rings)", reason: "Long-sighted, strategic, operates behind the scenes toward a grand plan" },

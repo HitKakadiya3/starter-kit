@@ -1,6 +1,5 @@
 import { useCallback, useState } from "react";
 import type { ApiQuestion, QuizAnswer } from "@/lib/apiTypes";
-import { LIKERT_LABELS_BY_POSITION } from "@/lib/likertScale";
 
 export interface UseQuizState {
   currentQuestion: ApiQuestion | undefined;
@@ -10,7 +9,7 @@ export interface UseQuizState {
   isComplete: boolean;
   startTime: number | undefined;
   endTime: number | undefined;
-  answer: (positionIndex: number) => void;
+  answer: (optionId: string) => void;
   reset: () => void;
 }
 
@@ -24,15 +23,11 @@ export function useQuiz(questions: ApiQuestion[]): UseQuizState {
   const isComplete = questions.length > 0 && answers.length === questions.length;
 
   const answer = useCallback(
-    (positionIndex: number) => {
+    (optionId: string) => {
       setAnswers((prev) => {
         const q = questions[prev.length];
         if (!q) return prev;
-        const label = LIKERT_LABELS_BY_POSITION[positionIndex];
-        if (!label) return prev;
-        // The backend's options[] order varies per question; match by text
-        // label rather than by array index.
-        const opt = q.options?.find((o) => o.text === label);
+        const opt = q.options?.find((o) => o.id === optionId);
         if (!opt) return prev;
         const next = [...prev, { id: q.id, answer: opt.id }];
         if (prev.length === 0) setStartTime(Date.now());

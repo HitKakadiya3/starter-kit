@@ -62,7 +62,7 @@ export interface PremiumTypeData {
 
 const ESTJ: PremiumTypeData = {
   code: "ESTJ",
-  name: "The Efficient Organizer",
+  name: "The Director",
   tagline: "Getting it done and getting it right.",
   accentColor: "hsl(40 75% 45%)",
   traits: ["Extraverted", "Observant", "Thinking", "Judging"],
@@ -210,6 +210,8 @@ const ESTJ: PremiumTypeData = {
     { name: "Hermione Granger", role: "Fictional (Harry Potter)", reason: "Rule-following, highly organised, expects competence from herself and others" },
     { name: "Captain Picard", role: "Fictional (Star Trek)", reason: "Commands with logic, structure, and clear standards; leads by principled example" },
     { name: "Warren Buffett", role: "Investor & businessman", reason: "Systematic, disciplined, long-term structured thinking — consistent and reliable over decades" },
+    { name: "Ōkubo Toshimichi", role: "Statesman", reason: "Decisive organiser who built modern institutions through structured, top-down reform" },
+    { name: "Kondō Isami", role: "Shinsengumi commander", reason: "Stern, rule-bound leader who demanded order and discipline from his unit" },
   ],
   typeComparisons: [
     {

@@ -1,16 +1,19 @@
-import { useNavigate } from 'react-router-dom';
 import { useEffect, useMemo, useRef } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useQuery } from '@tanstack/react-query';
 import { useQuiz } from '@/hooks/useQuiz';
+import { useLocalizedNavigate } from '@/hooks/useLocale';
 import ProgressBar from '@/components/ProgressBar';
 import ScaleSelector from '@/components/ScaleSelector';
 import { Button } from '@/components/ui/button';
 import { apiGet } from '@/lib/api';
+import { pushDataLayer } from '@/lib/analytics';
 import type { ApiQuestion } from '@/lib/apiTypes';
 import { withPromoParams } from '@/lib/promoUrl';
 
 const QuizPage = () => {
-  const navigate = useNavigate();
+  const navigate = useLocalizedNavigate();
+  const { t } = useTranslation();
   const containerRef = useRef<HTMLDivElement>(null);
 
   const { data, isLoading, isError, refetch } = useQuery({
@@ -67,6 +70,58 @@ const QuizPage = () => {
     containerRef.current?.scrollTo({ top: 0, behavior: 'smooth' });
   }, [questionIndex]);
 
+  // GA4 `test_abandoned` (autoEvent / funnel). Fires when the user leaves
+  // /quiz without completing AND has answered at least one question (so
+  // start_time exists). Three triggers are covered:
+  //   1. Internal route change → React unmount cleanup below
+  //   2. Tab/window close, browser back to a non-app page, mobile swipe-away
+  //      → `pagehide` (more reliable than `beforeunload`, especially on iOS)
+  //   3. Page goes to BFCache → `pagehide` again with persisted=true
+  // A ref guards against double-fire (e.g. pagehide + cleanup on the same
+  // navigation). The handler reads the latest quiz state via `stateRef` so
+  // the listener — captured once — never sees stale values.
+  const abandonedRef = useRef(false);
+  const stateRef = useRef({ preparedQuestions, questionIndex, answers, startTime, isComplete });
+  stateRef.current = { preparedQuestions, questionIndex, answers, startTime, isComplete };
+  useEffect(() => {
+    const fireAbandon = () => {
+      if (abandonedRef.current) return;
+      const s = stateRef.current;
+      if (s.isComplete) return;
+      if (!s.startTime) return;            // user never answered — not "abandoned"
+      if (s.preparedQuestions.length === 0) return;
+      abandonedRef.current = true;
+
+      const total = s.preparedQuestions.length;
+      const answered = s.answers.length;
+      // Boolean array — first `answered` entries are true, the rest false.
+      const questionList = Array.from({ length: total }, (_, i) => i < answered);
+      const currentQ = s.preparedQuestions[s.questionIndex];
+
+      pushDataLayer({
+        event: 'autoEvent',
+        eventCategory: 'funnel',
+        eventAction: 'test_abandoned',
+        type: {
+          test_type: '50_questions',
+          start_time: s.startTime,
+          question_list: questionList,
+          abandoned_question: currentQ?.id ?? null,
+          abandon_time: Date.now(),
+        },
+      });
+    };
+
+    window.addEventListener('pagehide', fireAbandon);
+    return () => {
+      window.removeEventListener('pagehide', fireAbandon);
+      // React unmount (internal navigation) — fire only if the user is
+      // leaving mid-quiz. The `isComplete` short-circuit inside fireAbandon
+      // keeps the natural "finished the quiz" path silent.
+      fireAbandon();
+    };
+  }, []);
+
   if (isLoading) {
     return (
       <div className="min-h-screen bg-muted/40 flex items-center justify-center px-4">
@@ -75,7 +130,7 @@ const QuizPage = () => {
             <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
             <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
           </svg>
-          <p className="text-muted-foreground text-sm">Loading your questions…</p>
+          <p className="text-muted-foreground text-sm">{t('quiz.loadingQuestions')}</p>
         </div>
       </div>
     );
@@ -86,11 +141,11 @@ const QuizPage = () => {
       <div className="min-h-screen bg-muted/40 flex items-center justify-center px-4">
         <div className="max-w-md w-full bg-card border border-border rounded-2xl shadow-lg p-8 text-center space-y-5">
           <h2 className="text-xl font-extrabold text-foreground">
-            We couldn't load the quiz.
+            {t('quiz.errorTitle')}
           </h2>
-          <p className="text-sm text-muted-foreground">Please try again.</p>
+          <p className="text-sm text-muted-foreground">{t('quiz.errorBody')}</p>
           <Button variant="hero" size="lg" className="w-full" onClick={() => refetch()}>
-            Retry
+            {t('quiz.retry')}
           </Button>
         </div>
       </div>
@@ -102,10 +157,10 @@ const QuizPage = () => {
       <div className="min-h-screen bg-muted/40 flex items-center justify-center px-4">
         <div className="max-w-md w-full bg-card border border-border rounded-2xl shadow-lg p-8 text-center space-y-5">
           <h2 className="text-xl font-extrabold text-foreground">
-            This test isn't available right now
+            {t('quiz.unavailableTitle')}
           </h2>
           <Button variant="hero" size="lg" className="w-full" onClick={() => refetch()}>
-            Try Again
+            {t('quiz.tryAgain')}
           </Button>
         </div>
       </div>
@@ -121,7 +176,7 @@ const QuizPage = () => {
         {/* Navbar with logo */}
         <div className="bg-background/90 backdrop-blur-sm border-b border-border">
           <div className="max-w-6xl mx-auto px-4 md:px-8 flex items-center h-20">
-            <div className="flex items-center gap-3 cursor-pointer flex-shrink-0" onClick={() => navigate('/')}>
+            <div className="flex items-center gap-3 flex-shrink-0">
               <svg width="40" height="40" viewBox="0 0 40 40" className="flex-shrink-0 w-7 h-7 md:w-10 md:h-10">
                 {[0, 45, 90, 135, 180, 225, 270, 315].map((angle, i) => {
                   const rad = (angle * Math.PI) / 180;
@@ -147,9 +202,9 @@ const QuizPage = () => {
               <div className="flex flex-col" style={{ lineHeight: '1.1' }}>
                 <span className="text-lg md:text-2xl font-extrabold uppercase tracking-[0.06em]">
                   <span style={{ color: 'hsl(270 50% 45%)' }}>16</span>
-                  <span className="text-foreground"> Types Test</span>
+                  <span className="text-foreground"> {t('brand.name')}</span>
                 </span>
-                <span className="text-[9px] md:text-[11px] font-medium tracking-[0.25em] text-muted-foreground">Inspired by MBTI Theory</span>
+                <span className="text-[9px] md:text-[11px] font-medium tracking-[0.25em] text-muted-foreground">{t('brand.tagline')}</span>
               </div>
             </div>
           </div>
@@ -170,7 +225,8 @@ const QuizPage = () => {
           </p>
 
           <ScaleSelector
-            onSelect={(positionIndex) => quiz.answer(positionIndex)}
+            options={currentQuestion.options}
+            onSelect={(optionId) => quiz.answer(optionId)}
             questionIndex={questionIndex}
           />
         </div>

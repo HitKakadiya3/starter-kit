@@ -1,4 +1,5 @@
 import { useLocation, useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { useResults } from '@/hooks/useResults';
 import TypeBadge from '@/components/TypeBadge';
 import TraitBar from '@/components/TraitBar';
@@ -23,6 +24,7 @@ const ResultsPage = () => {
 
 const ResultsContent = ({ scores, onRetake }: { scores: Scores; onRetake: () => void }) => {
   const { type, typeData: data, traitPercentages } = useResults(scores);
+  const { t } = useTranslation();
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-background via-background to-accent/30 py-8 px-4">
@@ -35,7 +37,7 @@ const ResultsContent = ({ scores, onRetake }: { scores: Scores; onRetake: () => 
 
         {/* Trait bars */}
         <div className="bg-card rounded-2xl p-5 md:p-8 shadow-card border border-border/50 space-y-4 animate-fade-in" style={{ animationDelay: '0.1s' }}>
-          <h3 className="text-sm font-semibold text-foreground mb-4">Your Cognitive Profile</h3>
+          <h3 className="text-sm font-semibold text-foreground mb-4">{t('results.cognitiveProfile')}</h3>
           {traitPercentages.map(tp => (
             <TraitBar key={tp.dim} {...tp} />
           ))}
@@ -48,18 +50,18 @@ const ResultsContent = ({ scores, onRetake }: { scores: Scores; onRetake: () => 
 
         {/* Info cards */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 animate-fade-in" style={{ animationDelay: '0.3s' }}>
-          <InfoCard title="Strengths">
+          <InfoCard title={t('results.strengths')}>
             <div className="flex flex-wrap gap-1.5">
               {data.strengths.map(s => <StrengthTag key={s} label={s} />)}
             </div>
           </InfoCard>
-          <InfoCard title="Career Paths">
+          <InfoCard title={t('results.careerPaths')}>
             <p>{data.careers}</p>
           </InfoCard>
-          <InfoCard title="Famous Examples">
+          <InfoCard title={t('results.famousExamples')}>
             <p>{data.famous}</p>
           </InfoCard>
-          <InfoCard title="At Their Best">
+          <InfoCard title={t('results.atTheirBest')}>
             <p>{data.atTheirBest}</p>
           </InfoCard>
         </div>
@@ -68,7 +70,7 @@ const ResultsContent = ({ scores, onRetake }: { scores: Scores; onRetake: () => 
         <div className="text-center animate-fade-in" style={{ animationDelay: '0.4s' }}>
           <Button variant="outline" size="lg" onClick={onRetake}>
             <RotateCcw className="mr-2 h-4 w-4" />
-            Retake Test
+            {t('results.retake')}
           </Button>
         </div>
       </div>

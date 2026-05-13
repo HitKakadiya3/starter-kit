@@ -102,9 +102,11 @@ export const ESFP: PremiumTypeData = {
   topGrowthChallenges: ["Stay with the long, quiet seasons; depth is on the other side of the plateau", "Have the hard honest conversation early; the kindness is in the honesty, not the avoidance", "Build routines that protect your own inner life, not just your outer sparkle"],
   famousPeople: [
     { name: "Elvis Presley", role: "Musician", reason: "Electric stage presence; turned performance into a cultural force" },
+    { name: "Hibari Misora", role: "Singer & actress", reason: "Magnetic performer whose warmth and presence captivated audiences for decades" },
     { name: "Marilyn Monroe", role: "Actress", reason: "Warm, vulnerable, radiant on and off screen" },
     { name: "Jamie Oliver", role: "Chef", reason: "Warm, expressive, turns cooking into connection and celebration" },
     { name: "Serena Williams", role: "Tennis great", reason: "Physical brilliance with generous warmth off the court" },
+    { name: "Kyu Sakamoto", role: "Singer", reason: "Joyful, spontaneous performer who radiated charm on stage and screen" },
     { name: "Will Smith", role: "Actor", reason: "Charismatic, emotionally open, made a career of warm presence" },
     { name: "Peregrin Took", role: "Fictional (LOTR)", reason: "Warm, spontaneous, brave once committed to his friends" },
     { name: "Rachel Green", role: "Fictional (Friends)", reason: "Warm, expressive, grew from sparkle into real depth over time" },

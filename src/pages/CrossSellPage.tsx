@@ -1,8 +1,10 @@
 import { useCallback, useEffect, useState } from 'react';
-import { useNavigate, useSearchParams } from 'react-router-dom';
+import { useSearchParams } from 'react-router-dom';
+import { Trans, useTranslation } from 'react-i18next';
 
-import iqTestPreview from '@/assets/iq-test-preview.png';
+import careerPreview from '@/assets/career-preview.png';
 import { Button } from '@/components/ui/button';
+import { useLocalizedNavigate } from '@/hooks/useLocale';
 import { useRedirectGuard } from '@/hooks/useRedirectGuard';
 import { usePricing } from '@/hooks/usePricing';
 import { ApiError, NetworkError, apiPost } from '@/lib/api';
@@ -15,7 +17,8 @@ interface CrossSaleConfirmResponse {
 }
 
 const CrossSellPage = () => {
-  const navigate = useNavigate();
+  const navigate = useLocalizedNavigate();
+  const { t } = useTranslation();
   const [searchParams] = useSearchParams();
   const qid = searchParams.get('qid');
   const ready = useRedirectGuard('/cross-sell');
@@ -68,15 +71,15 @@ const CrossSellPage = () => {
       navigate(withPromoParams(`${next}?qid=${encodeURIComponent(q)}`), { replace: true });
     } catch (e) {
       if (e instanceof ApiError || e instanceof NetworkError) {
-        setSubmitError("Card on file couldn't be charged. Please continue without the add-on.");
+        setSubmitError(t('crossSell.chargeError'));
       } else {
-        setSubmitError('Something went wrong. Please try again.');
+        setSubmitError(t('common.somethingWentWrong'));
       }
       setSubmitting(false);
       // Success branch does NOT setSubmitting(false): the component unmounts
       // on navigate and a post-unmount setState would warn.
     }
-  }, [submitting, session.qidRaw, session.prcId, session.mdid, qid, navigate]);
+  }, [submitting, session.qidRaw, session.prcId, session.mdid, qid, navigate, t]);
 
   const handleSkip = useCallback(() => {
     if (submitting) return;
@@ -93,7 +96,7 @@ const CrossSellPage = () => {
   if (!ready) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
-        <p className="text-muted-foreground text-sm">Loading…</p>
+        <p className="text-muted-foreground text-sm">{t('common.loading')}</p>
       </div>
     );
   }
@@ -103,10 +106,10 @@ const CrossSellPage = () => {
       <div className="min-h-screen bg-muted/30 flex items-center justify-center p-4">
         <div className="max-w-md w-full bg-card border border-border rounded-2xl shadow-card p-6 md:p-8 text-center space-y-4">
           <h2 className="text-lg font-bold text-foreground">
-            Couldn&apos;t load pricing. Please try again.
+            {t('crossSell.pricingError')}
           </h2>
           <Button variant="hero" size="lg" className="w-full" onClick={() => refetch()}>
-            Retry
+            {t('crossSell.retry')}
           </Button>
         </div>
       </div>
@@ -127,27 +130,38 @@ const CrossSellPage = () => {
         <div className="max-w-xl w-full bg-card shadow-card rounded-2xl overflow-hidden">
           {/* Header Banner */}
           <div className="bg-secondary text-secondary-foreground py-5 text-center space-y-1">
-            <p className="text-lg md:text-xl font-bold">Payment Completed</p>
-            <p className="text-base md:text-lg font-semibold">Your Personality report is ready</p>
+            <p className="text-lg md:text-xl font-bold">{t('crossSell.paymentCompleted')}</p>
+            <p className="text-base md:text-lg font-semibold">{t('crossSell.reportReady')}</p>
           </div>
 
           {/* Card Body */}
           <div className="px-6 md:px-10 py-8 space-y-6">
-            {/* Description */}
+            {/* Description — content describes the IQ Pro upsell that the
+                backend serves (`pricing_info.transactions.cross_sale`). The
+                {{price}} value comes from the live pricing call, not from
+                hardcoded copy. */}
             <p className="text-[13px] md:text-[14.5px] text-muted-foreground leading-relaxed">
-              After reviewing your personality profile, we'd like to offer you the chance to take our IQ Test for just {isLoading || !current ? pricePlaceholder : current.cross_sale_price_label}. The test includes 30 questions and takes only a few minutes to complete. Once finished, you'll receive your IQ score, an official IQ certificate, and a detailed report with insights into key areas such as reasoning, logic, and problem-solving. Get your personalized score report and see how you compare to thousands of adults from around the world.
+              <Trans
+                i18nKey="crossSell.description"
+                components={{
+                  price:
+                    isLoading || !current
+                      ? pricePlaceholder
+                      : <span>{current.cross_sale_price_label}</span>,
+                }}
+              />
             </p>
 
             {/* Product Card */}
             <div className="bg-muted/50 rounded-2xl p-3 md:p-4 border border-border flex items-center gap-5">
               <div className="flex-1 space-y-2">
-                <h3 className="text-lg md:text-xl font-bold text-foreground">IQ Pro</h3>
+                <h3 className="text-lg md:text-xl font-bold text-foreground">{t('crossSell.productTitle')}</h3>
                 <p className="text-xs md:text-sm text-muted-foreground leading-relaxed">
-                  Find out your IQ score and receive an official IQ certificate, along with a customized assessment report.
+                  {t('crossSell.productBody')}
                 </p>
               </div>
-              <div className="flex-shrink-0 w-20 md:w-24 rounded-xl overflow-hidden">
-                <img src={iqTestPreview} alt="IQ Test Preview" className="w-full h-auto object-contain rounded-xl" />
+              <div className="flex-shrink-0 w-16 md:w-24 rounded-xl overflow-hidden">
+                <img src={careerPreview} alt={t('crossSell.productTitle')} loading="lazy" width={512} height={512} className="w-full h-auto object-contain rounded-xl" />
               </div>
             </div>
 
@@ -166,11 +180,11 @@ const CrossSellPage = () => {
               <Button
                 variant="hero"
                 size="xl"
-                className="max-w-sm mx-auto w-full text-base md:text-lg font-bold rounded-full"
+                className="max-w-sm mx-auto w-full text-[15px] md:text-xl font-bold rounded-full px-4 whitespace-normal text-center leading-tight h-auto min-h-[52px] py-3"
                 onClick={handleAccept}
                 disabled={submitting}
               >
-                {submitting ? 'Processing…' : 'Yes, add the IQ test to my order'}
+                {submitting ? t('common.processing') : t('crossSell.confirm')}
               </Button>
 
               {/* Skip is hidden when the upsell is compulsory (PRD §4.2). When a
@@ -184,7 +198,7 @@ const CrossSellPage = () => {
                     submitError ? 'text-base md:text-lg font-bold' : ''
                   } disabled:opacity-50 disabled:cursor-not-allowed`}
                 >
-                  Skip and get my personality report only
+                  {t('crossSell.skip')}
                 </button>
               )}
 
@@ -198,7 +212,7 @@ const CrossSellPage = () => {
                   onClick={handleAccept}
                   disabled={submitting}
                 >
-                  Retry
+                  {t('crossSell.retry')}
                 </Button>
               )}
             </div>
@@ -206,8 +220,8 @@ const CrossSellPage = () => {
             {/* Disclaimer */}
             <p className="text-xs text-muted-foreground/60 text-center leading-relaxed">
               {isCompulsory
-                ? 'This add-on is required to continue.'
-                : '*You will be charged for the add-on services or products selected at the time of purchase.'}
+                ? t('crossSell.compulsoryDisclaimer')
+                : t('crossSell.disclaimer')}
             </p>
           </div>
         </div>

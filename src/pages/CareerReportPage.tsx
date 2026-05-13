@@ -1,10 +1,13 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useLocation } from 'react-router-dom';
+import { useLocation, useSearchParams } from 'react-router-dom';
 import { calculateType, type Scores } from '@/utils/scoring';
 import { type PremiumCareerReport } from '@/utils/careerReports';
 import { getCareerReportLocalized } from '@/utils/localizedData';
 import { useLocale, useLocalizedNavigate } from '@/hooks/useLocale';
+import { useRedirectGuard } from '@/hooks/useRedirectGuard';
+import { useCustomerThankyou } from '@/hooks/useCustomerThankyou';
+import { getSession } from '@/lib/session';
 import { Button } from '@/components/ui/button';
 import { getAvatarForType, type Gender } from '@/utils/avatarMap';
 import {
@@ -13,6 +16,13 @@ import {
   XCircle, DollarSign, Zap, Users, MessageSquare, Flag,
   Lightbulb, Network, Calendar, Eye,
 } from 'lucide-react';
+
+const VALID_TYPES = new Set([
+  'INTJ', 'INTP', 'ENTJ', 'ENTP',
+  'INFJ', 'INFP', 'ENFJ', 'ENFP',
+  'ISTJ', 'ISFJ', 'ESTJ', 'ESFJ',
+  'ISTP', 'ISFP', 'ESTP', 'ESFP',
+]);
 
 /* Single accent color used throughout — keeps the page recognizably "career". */
 const ACCENT = 'hsl(24 95% 53%)';      // orange-500
@@ -43,22 +53,106 @@ const useSections = () => {
 
 const CareerReportPage = () => {
   const location = useLocation();
-  const navigate = useLocalizedNavigate();
+  const [searchParams] = useSearchParams();
   const state = location.state as { scores?: Scores; type?: string } | null;
 
-  const queryType = useMemo(() => {
-    if (typeof window === 'undefined') return null;
-    const t = new URLSearchParams(window.location.search).get('type');
-    return t ? t.toUpperCase() : null;
-  }, []);
+  const queryType = searchParams.get('type')?.toUpperCase() ?? null;
+  const qidParam = searchParams.get('qid');
 
-  const type = useMemo(() => {
-    if (queryType) return queryType;
-    if (state?.type) return state.type;
-    if (state?.scores) return calculateType(state.scores);
-    return 'INTJ';
-  }, [state, queryType]);
+  // Direct-type paths skip the API call entirely. Order matches the original
+  // page: explicit state.type > derived from state.scores > URL ?type=.
+  // These power dev previews, MBTI hand-offs from /results, and
+  // marketing/preview links.
+  const directType =
+    state?.type ??
+    (state?.scores ? calculateType(state.scores) : null) ??
+    (queryType && VALID_TYPES.has(queryType) ? queryType : null);
 
+  if (directType) {
+    return <CareerReportContent type={directType} stateScores={state?.scores ?? null} qid={null} />;
+  }
+
+  // Live path — qid in URL (or session) drives a customer/thankyou call to
+  // resolve the user's personality type. Mirrors PremiumReportPage's
+  // ReportGuardedPlaceholder → ReportLiveLoader → ReportContent split.
+  return <CareerReportGuardedPlaceholder qid={qidParam} />;
+};
+
+const CareerReportGuardedPlaceholder = ({ qid }: { qid: string | null }) => {
+  // The guard's `/career-report` branch persists the URL qid into session
+  // and marks ready immediately — no /questions/results call (that endpoint
+  // would route the user back to /results since we're past THANK_YOU_PAGE).
+  const ready = useRedirectGuard('/career-report');
+  const { t } = useTranslation();
+  if (!ready) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <p className="text-muted-foreground text-sm">{t('common.loading')}</p>
+      </div>
+    );
+  }
+  return <CareerReportLiveLoader qid={qid} />;
+};
+
+const CareerReportLiveLoader = ({ qid }: { qid: string | null }) => {
+  const { t } = useTranslation();
+  const { data, loading, error } = useCustomerThankyou();
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-muted/30 flex flex-col items-center justify-center gap-6">
+        <svg className="animate-spin h-14 w-14 text-primary" viewBox="0 0 24 24">
+          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
+          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+        </svg>
+        <p className="text-base font-semibold text-foreground">{t('details.generating')}</p>
+      </div>
+    );
+  }
+
+  if (error || !data) {
+    return <CareerReportErrorState qid={qid} />;
+  }
+
+  const detail = data.sixteentypes_report_detail;
+  if (!detail || !VALID_TYPES.has(detail.personality_type)) {
+    console.warn('[customer/thankyou] non-canonical personality_type:', detail?.personality_type);
+    return <CareerReportErrorState qid={qid} />;
+  }
+
+  return <CareerReportContent type={detail.personality_type} stateScores={null} qid={qid} />;
+};
+
+const CareerReportErrorState = ({ qid }: { qid: string | null }) => {
+  const { t } = useTranslation();
+  const navigate = useLocalizedNavigate();
+  return (
+    <div className="min-h-screen bg-background flex items-center justify-center px-4">
+      <div className="max-w-md w-full text-center space-y-5 p-8 rounded-2xl border border-border bg-card shadow-sm">
+        <div className="w-14 h-14 rounded-full bg-destructive/10 flex items-center justify-center mx-auto">
+          <AlertTriangle className="w-7 h-7 text-destructive" />
+        </div>
+        <h1 className="text-2xl font-bold text-foreground">{t('report.error.title')}</h1>
+        <p className="text-sm text-muted-foreground leading-relaxed">
+          {t('report.error.body', { qid: qid ?? '' })}
+        </p>
+        <div className="flex flex-col gap-2">
+          <Button onClick={() => window.location.reload()}>{t('report.error.retry')}</Button>
+          <Button variant="outline" onClick={() => navigate('/')}>
+            {t('report.error.back')}
+          </Button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+const CareerReportContent = ({
+  type, stateScores, qid,
+}: {
+  type: string; stateScores: Scores | null; qid: string | null;
+}) => {
+  const navigate = useLocalizedNavigate();
   const locale = useLocale();
   const report = useMemo(() => getCareerReportLocalized(type, locale), [type, locale]);
   const avatar = useMemo(() => {
@@ -68,8 +162,18 @@ const CareerReportPage = () => {
 
   if (!report) return null;
 
-  const goBack = () =>
-    navigate('/results', { state: { ...(state?.scores ? { scores: state.scores } : {}), careerPurchased: true } });
+  // Two-pronged back nav: dev preview forwards scores via state so /results
+  // can render without a backend qid; live path re-attaches the encrypted
+  // qid in the URL (preferring the prop, falling back to session) so a
+  // shared link still resolves.
+  const goBack = () => {
+    if (stateScores) {
+      navigate('/results', { state: { scores: stateScores, careerPurchased: true } });
+      return;
+    }
+    const enc = qid ?? getSession().qidEncrypted ?? null;
+    navigate(enc ? `/results?qid=${encodeURIComponent(enc)}` : '/results');
+  };
 
   return (
     <div

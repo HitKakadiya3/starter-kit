@@ -102,9 +102,11 @@ export const ENFP: PremiumTypeData = {
   topGrowthChallenges: ["Finish what you start — one completed project teaches you more than ten abandoned ones", "Protect your own inner life; you are not required to carry every friend's crisis", "Build routines that refill you — your creativity runs on rest, not just stimulation"],
   famousPeople: [
     { name: "Robin Williams", role: "Actor & comedian", reason: "Inventive, warm, bottomlessly expressive, deeply empathic" },
+    { name: "Ikkyū Sōjun", role: "Zen monk & poet", reason: "Eccentric, free-spirited iconoclast who lived his values out loud" },
     { name: "Walt Disney", role: "Entertainment entrepreneur", reason: "Imagination at industrial scale; believed in the vision first" },
     { name: "Ellen DeGeneres", role: "TV host & comedian", reason: "Warm, funny, emotionally connective with a wide public" },
     { name: "Che Guevara", role: "Revolutionary", reason: "Values-driven, restless, unwilling to accept the world as given" },
+    { name: "hide (Hideto Matsumoto)", role: "Musician", reason: "Vibrant, expressive artist who connected deeply with fans through creative reinvention" },
     { name: "Robert Downey Jr.", role: "Actor", reason: "Inventive, charming, vulnerable, full of reinvention" },
     { name: "Ariel", role: "Fictional (The Little Mermaid)", reason: "Curious, warm, driven by longing for a world she hasn't seen" },
     { name: "Jennifer Aniston", role: "Actress", reason: "Warm, playful, widely beloved for her emotional accessibility" },

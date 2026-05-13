@@ -36,12 +36,14 @@ describe("api client", () => {
     vi.stubEnv("VITE_API_BASE_URL", "http://example.test/api/v1/");
     vi.stubEnv("VITE_API_TOKEN", "test-token");
     vi.stubEnv("VITE_X_HOST", "test-host.com");
+    window.history.replaceState({}, "", "/");
   });
 
   afterEach(() => {
     global.fetch = originalFetch;
     vi.unstubAllEnvs();
     vi.restoreAllMocks();
+    window.history.replaceState({}, "", "/");
   });
 
   it("injects Authorization, x-host, ip_address, and Content-Type headers on every request", async () => {
@@ -58,6 +60,39 @@ describe("api client", () => {
       ip_address: "1.2.3.4",
       "Content-Type": "application/json",
     });
+  });
+
+  it("appends the URL's locale segment to x-host on non-default-locale routes", async () => {
+    window.history.replaceState({}, "", "/ja/quiz");
+    const fetchMock = vi.fn().mockResolvedValue(makeOkResponse({ foo: "bar" }));
+    global.fetch = fetchMock as unknown as typeof fetch;
+
+    await apiGet("foo");
+
+    const [, init] = fetchMock.mock.calls[0];
+    expect(init.headers["x-host"]).toBe("test-host.com/ja");
+  });
+
+  it("does not append the default locale (en) — English lives at the root", async () => {
+    window.history.replaceState({}, "", "/quiz");
+    const fetchMock = vi.fn().mockResolvedValue(makeOkResponse({ foo: "bar" }));
+    global.fetch = fetchMock as unknown as typeof fetch;
+
+    await apiGet("foo");
+
+    const [, init] = fetchMock.mock.calls[0];
+    expect(init.headers["x-host"]).toBe("test-host.com");
+  });
+
+  it("ignores non-locale first segments (e.g. /quiz) and keeps base host", async () => {
+    window.history.replaceState({}, "", "/checkout");
+    const fetchMock = vi.fn().mockResolvedValue(makeOkResponse({ foo: "bar" }));
+    global.fetch = fetchMock as unknown as typeof fetch;
+
+    await apiGet("foo");
+
+    const [, init] = fetchMock.mock.calls[0];
+    expect(init.headers["x-host"]).toBe("test-host.com");
   });
 
   it("sends ip_address header as empty string when session has no ipAddress", async () => {
