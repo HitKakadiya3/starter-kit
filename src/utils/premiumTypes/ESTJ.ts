@@ -102,11 +102,9 @@ export const ESTJ: PremiumTypeData = {
   topGrowthChallenges: ["Practice saying 'good work' before saying 'here's what could be better' — appreciation fuels the people around you", "When facing change, ask 'what could be better about this?' before defaulting to 'this is how we've always done it'", "Schedule time to reflect on your feelings — not just your tasks. Your emotional world matters and benefits from the same attention you give your work"],
   famousPeople: [
     { name: "George Washington", role: "First US President", reason: "Disciplined, duty-bound, organised — built systems and institutions that outlasted his lifetime" },
-    { name: "Ōkubo Toshimichi", role: "Statesman", reason: "Decisive organiser who built modern institutions through structured, top-down reform" },
     { name: "Judge Judy Sheindlin", role: "Judge & TV personality", reason: "Blunt, efficient, zero-tolerance for nonsense — a textbook ESTJ in action" },
     { name: "Angela Merkel", role: "Former German Chancellor", reason: "Methodical, pragmatic, evidence-driven leadership over 16 years" },
     { name: "Lyndon B. Johnson", role: "US President", reason: "Forceful, results-driven, used systems and leverage to get legislation passed" },
-    { name: "Kondō Isami", role: "Shinsengumi commander", reason: "Stern, rule-bound leader who demanded order and discipline from his unit" },
     { name: "Hermione Granger", role: "Fictional (Harry Potter)", reason: "Rule-following, highly organised, expects competence from herself and others" },
     { name: "Captain Picard", role: "Fictional (Star Trek)", reason: "Commands with logic, structure, and clear standards; leads by principled example" },
     { name: "Warren Buffett", role: "Investor & businessman", reason: "Systematic, disciplined, long-term structured thinking — consistent and reliable over decades" },

@@ -102,11 +102,9 @@ export const ISFP: PremiumTypeData = {
   topGrowthChallenges: ["Ship the creative work — the world needs your version, imperfect and real", "Ask for what you need out loud before resentment arrives", "Build enough structure to protect your creative life — logistics are not the enemy of art"],
   famousPeople: [
     { name: "Frida Kahlo", role: "Painter", reason: "Turned intense inner feeling and physical experience into art that still reverberates" },
-    { name: "Jun'ichirō Tanizaki", role: "Novelist", reason: "Sensual, aesthetically attuned writer devoted to beauty, mood, and quiet observation" },
     { name: "Bob Dylan", role: "Musician", reason: "Quiet, enigmatic, deeply private; expressed a generation's inner life through song" },
     { name: "Audrey Hepburn", role: "Actress & humanitarian", reason: "Gentle, elegant, values-driven, later life devoted to service" },
     { name: "Michael Jackson", role: "Musician", reason: "Physical genius, aesthetic sensitivity, profoundly private inner world" },
-    { name: "Utagawa Hiroshige", role: "Ukiyo-e artist", reason: "Gentle observer of landscape and seasons; let nature speak through his prints" },
     { name: "Lana Del Rey", role: "Musician", reason: "Sensory, atmospheric, values-led artistic voice" },
     { name: "Kevin Costner", role: "Actor & director", reason: "Understated screen presence, drawn to personal, values-rich stories" },
     { name: "Arwen", role: "Fictional (LOTR)", reason: "Graceful, values-driven, devoted love under a gentle surface" },

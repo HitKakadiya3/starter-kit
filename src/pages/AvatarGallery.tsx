@@ -1,5 +1,3 @@
-import { useTranslation } from 'react-i18next';
-
 // Purple background avatars (home versions)
 import intjImg from '@/assets/personalities-home/intj-strategist.png';
 import intpImg from '@/assets/personalities-home/intp-thinker.png';
@@ -71,50 +69,45 @@ import estpWFImg from '@/assets/personalities-female/estp-daredevil.png';
 import esfpWFImg from '@/assets/personalities-female/esfp-performer.png';
 
 const types = ['INTJ','INTP','ENTJ','ENTP','INFJ','INFP','ENFJ','ENFP','ISTJ','ISFJ','ESTJ','ESFJ','ISTP','ISFP','ESTP','ESFP'];
+const names = ['Strategist','Thinker','Leader','Innovator','Visionary','Idealist','Guide','Dreamer','Inspector','Protector','Director','Caretaker','Craftsman','Artist','Daredevil','Performer'];
 
 const purpleMale = [intjImg,intpImg,entjImg,entpImg,infjImg,infpImg,enfjImg,enfpImg,istjImg,isfjImg,estjImg,esfjImg,istpImg,isfpImg,estpImg,esfpImg];
 const purpleFemale = [intjFImg,intpFImg,entjFImg,entpFImg,infjFImg,infpFImg,enfjFImg,enfpFImg,istjFImg,isfjFImg,estjFImg,esfjFImg,istpFImg,isfpFImg,estpFImg,esfpFImg];
 const whiteMale = [intjWImg,intpWImg,entjWImg,entpWImg,infjWImg,infpWImg,enfjWImg,enfpWImg,istjWImg,isfjWImg,estjWImg,esfjWImg,istpWImg,isfpWImg,estpWImg,esfpWImg];
 const whiteFemale = [intjWFImg,intpWFImg,entjWFImg,entpWFImg,infjWFImg,infpWFImg,enfjWFImg,enfpWFImg,istjWFImg,isfjWFImg,estjWFImg,esfjWFImg,istpWFImg,isfpWFImg,estpWFImg,esfpWFImg];
 
-const AvatarGrid = ({ title, maleImgs, femaleImgs }: { title: string; maleImgs: string[]; femaleImgs: string[] }) => {
-  const { t } = useTranslation();
-  return (
-    <div className="mb-16">
-      <h2 className="text-2xl font-bold text-primary mb-6">{title}</h2>
-      <h3 className="text-lg font-semibold text-foreground mb-3">{t('avatarGallery.male')}</h3>
-      <div className="grid grid-cols-4 md:grid-cols-8 gap-4 mb-8">
-        {types.map((tp, i) => (
-          <div key={`m-${tp}`} className="flex flex-col items-center gap-1">
-            <img src={maleImgs[i]} alt={tp} className="w-24 h-24 rounded-full object-cover border-2 border-border" />
-            <span className="text-xs font-bold">{tp}</span>
-            <span className="text-[10px] text-muted-foreground">{t(`sixteenTypes.labels.${tp}`)}</span>
-          </div>
-        ))}
-      </div>
-      <h3 className="text-lg font-semibold text-foreground mb-3">{t('avatarGallery.female')}</h3>
-      <div className="grid grid-cols-4 md:grid-cols-8 gap-4">
-        {types.map((tp, i) => (
-          <div key={`f-${tp}`} className="flex flex-col items-center gap-1">
-            <img src={femaleImgs[i]} alt={tp} className="w-24 h-24 rounded-full object-cover border-2 border-border" />
-            <span className="text-xs font-bold">{tp}</span>
-            <span className="text-[10px] text-muted-foreground">{t(`sixteenTypes.labels.${tp}`)}</span>
-          </div>
-        ))}
-      </div>
+const AvatarGrid = ({ title, maleImgs, femaleImgs }: { title: string; maleImgs: string[]; femaleImgs: string[] }) => (
+  <div className="mb-16">
+    <h2 className="text-2xl font-bold text-primary mb-6">{title}</h2>
+    <h3 className="text-lg font-semibold text-foreground mb-3">Male</h3>
+    <div className="grid grid-cols-4 md:grid-cols-8 gap-4 mb-8">
+      {types.map((t, i) => (
+        <div key={`m-${t}`} className="flex flex-col items-center gap-1">
+          <img src={maleImgs[i]} alt={t} className="w-24 h-24 rounded-full object-cover border-2 border-border" />
+          <span className="text-xs font-bold">{t}</span>
+          <span className="text-[10px] text-muted-foreground">{names[i]}</span>
+        </div>
+      ))}
     </div>
-  );
-};
+    <h3 className="text-lg font-semibold text-foreground mb-3">Female</h3>
+    <div className="grid grid-cols-4 md:grid-cols-8 gap-4">
+      {types.map((t, i) => (
+        <div key={`f-${t}`} className="flex flex-col items-center gap-1">
+          <img src={femaleImgs[i]} alt={t} className="w-24 h-24 rounded-full object-cover border-2 border-border" />
+          <span className="text-xs font-bold">{t}</span>
+          <span className="text-[10px] text-muted-foreground">{names[i]}</span>
+        </div>
+      ))}
+    </div>
+  </div>
+);
 
-const AvatarGallery = () => {
-  const { t } = useTranslation();
-  return (
-    <div className="min-h-screen bg-background p-6">
-      <h1 className="text-3xl font-bold text-foreground mb-10">{t('avatarGallery.title')}</h1>
-      <AvatarGrid title={t('avatarGallery.purple')} maleImgs={purpleMale} femaleImgs={purpleFemale} />
-      <AvatarGrid title={t('avatarGallery.white')} maleImgs={whiteMale} femaleImgs={whiteFemale} />
-    </div>
-  );
-};
+const AvatarGallery = () => (
+  <div className="min-h-screen bg-background p-6">
+    <h1 className="text-3xl font-bold text-foreground mb-10">Avatar Gallery</h1>
+    <AvatarGrid title="Purple Background" maleImgs={purpleMale} femaleImgs={purpleFemale} />
+    <AvatarGrid title="White Background" maleImgs={whiteMale} femaleImgs={whiteFemale} />
+  </div>
+);
 
 export default AvatarGallery;

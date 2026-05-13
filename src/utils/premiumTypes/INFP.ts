@@ -102,11 +102,9 @@ export const INFP: PremiumTypeData = {
   topGrowthChallenges: ["Finish the creative project — the world needs your version of it, imperfect and shipped", "Name your feelings out loud before they turn into resentment", "Build enough structure to protect your creative life — logistics are not the enemy of art"],
   famousPeople: [
     { name: "J.R.R. Tolkien", role: "Author", reason: "Built a whole inner world and let it become the outer one" },
-    { name: "Ryūnosuke Akutagawa", role: "Writer", reason: "Inward, idealistic author who explored conscience, morality, and the inner world" },
     { name: "William Shakespeare", role: "Playwright", reason: "Captured the full range of human feeling in language" },
     { name: "Princess Diana", role: "Humanitarian", reason: "Empathic, values-driven, reached people through quiet, authentic presence" },
     { name: "Vincent van Gogh", role: "Painter", reason: "Intense inner life poured into art that still moves people" },
-    { name: "Osamu Dazai", role: "Novelist", reason: "Searingly honest about the inner self; turned private feeling into literature" },
     { name: "Audrey Hepburn", role: "Actress & humanitarian", reason: "Gentle, principled, gave later life to service" },
     { name: "Fred Rogers", role: "Television host & minister", reason: "Radical kindness as a sustained life's work" },
     { name: "Frodo Baggins", role: "Fictional (LOTR)", reason: "Reluctant but values-driven hero who endures for the sake of others" },

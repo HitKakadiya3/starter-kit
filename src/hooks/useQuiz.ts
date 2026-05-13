@@ -1,37 +1,63 @@
-import { useState, useCallback } from 'react';
-import { questions, Question } from '@/utils/questions';
-import { Scores, initialScores, applyAnswer, AtScore, initialAtScore, applyAtAnswer } from '@/utils/scoring';
+import { useCallback, useState } from "react";
+import type { ApiQuestion, QuizAnswer } from "@/lib/apiTypes";
+import { LIKERT_LABELS_BY_POSITION } from "@/lib/likertScale";
 
-export function useQuiz() {
-  const [questionIndex, setQuestionIndex] = useState(0);
-  const [scores, setScores] = useState<Scores>(initialScores);
-  const [atScore, setAtScore] = useState<AtScore>(initialAtScore);
-  const [isComplete, setIsComplete] = useState(false);
+export interface UseQuizState {
+  currentQuestion: ApiQuestion | undefined;
+  questionIndex: number;
+  totalQuestions: number;
+  answers: QuizAnswer[];
+  isComplete: boolean;
+  startTime: number | undefined;
+  endTime: number | undefined;
+  answer: (positionIndex: number) => void;
+  reset: () => void;
+}
 
-  const currentQuestion: Question = questions[questionIndex];
-  const totalQuestions = questions.length;
+export function useQuiz(questions: ApiQuestion[]): UseQuizState {
+  const [answers, setAnswers] = useState<QuizAnswer[]>([]);
+  const [startTime, setStartTime] = useState<number | undefined>();
+  const [endTime, setEndTime] = useState<number | undefined>();
 
-  const answer = useCallback((weight: number) => {
-    const q = questions[questionIndex];
-    if (q.dim === 'A/T') {
-      setAtScore(prev => applyAtAnswer(prev, q.pole as 'A' | 'T', weight));
-    } else {
-      setScores(prev => applyAnswer(prev, q.pole, weight));
-    }
+  const questionIndex = answers.length;
+  const currentQuestion = questions[questionIndex];
+  const isComplete = questions.length > 0 && answers.length === questions.length;
 
-    if (questionIndex + 1 >= totalQuestions) {
-      setIsComplete(true);
-    } else {
-      setQuestionIndex(prev => prev + 1);
-    }
-  }, [questionIndex, totalQuestions]);
+  const answer = useCallback(
+    (positionIndex: number) => {
+      setAnswers((prev) => {
+        const q = questions[prev.length];
+        if (!q) return prev;
+        const label = LIKERT_LABELS_BY_POSITION[positionIndex];
+        if (!label) return prev;
+        // The backend's options[] order varies per question; match by text
+        // label rather than by array index.
+        const opt = q.options?.find((o) => o.text === label);
+        if (!opt) return prev;
+        const next = [...prev, { id: q.id, answer: opt.id }];
+        if (prev.length === 0) setStartTime(Date.now());
+        if (next.length === questions.length) setEndTime(Date.now());
+        return next;
+      });
+    },
+    [questions],
+  );
 
   const reset = useCallback(() => {
-    setQuestionIndex(0);
-    setScores(initialScores);
-    setAtScore(initialAtScore);
-    setIsComplete(false);
+    setAnswers([]);
+    setStartTime(undefined);
+    setEndTime(undefined);
   }, []);
 
-  return { currentQuestion, questionIndex, totalQuestions, answer, isComplete, scores, atScore, reset };
+  return {
+    currentQuestion,
+    questionIndex,
+    totalQuestions: questions.length,
+    answers,
+    isComplete,
+    startTime,
+    endTime,
+    answer,
+    reset,
+  };
 }
