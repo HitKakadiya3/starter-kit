@@ -17,8 +17,10 @@ export type PaymentMode = "sandbox" | "live";
 
 const cache: Partial<Record<PaymentMode, Promise<Stripe | null>>> = {};
 
+import { config } from "../config";
+
 function publishableKeyFor(mode: PaymentMode): string {
-  return import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY_LIVE
+  return mode === "sandbox" ? config.stripePublishableKeySandbox : config.stripePublishableKeyLive;
 }
 
 /**

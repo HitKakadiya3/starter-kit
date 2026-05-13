@@ -1,6 +1,7 @@
 import { SUPPORTED_LOCALES } from "@/i18n";
 import { ensureIpResolved } from "./ip";
 import { getSession } from "./session";
+import { config } from "../config";
 
 const DEFAULT_LOCALE = "en";
 
@@ -10,7 +11,7 @@ const DEFAULT_LOCALE = "en";
 // pathname at request time (not boot time) keeps the header correct after
 // a LanguageSwitcher click without requiring any context plumbing.
 function buildXHost(): string {
-  const base = import.meta.env.VITE_X_HOST;
+  const base = config.xHost;
   const first =
     typeof window !== "undefined"
       ? window.location.pathname.split("/").filter(Boolean)[0]
@@ -49,7 +50,7 @@ async function request<T>(
   path: string,
   body?: unknown,
 ): Promise<T> {
-  const base = import.meta.env.VITE_API_BASE_URL;
+  const base = config.apiBaseUrl;
   const url = `${base}${path}`;
 
   // Backend's pricing logic is geo-based; a missing `ip_address` header
@@ -62,7 +63,7 @@ async function request<T>(
     res = await fetch(url, {
       method,
       headers: {
-        Authorization: `Bearer ${import.meta.env.VITE_API_TOKEN}`,
+        Authorization: `Bearer ${config.apiToken}`,
         "x-host": buildXHost(),
         ip_address: getSession().ipAddress ?? "",
         "Content-Type": "application/json",
