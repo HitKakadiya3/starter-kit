@@ -1,5 +1,7 @@
 import { useEffect, useState } from 'react';
-import { useLocation, useNavigate } from 'react-router-dom';
+import { useLocation } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
+import { useLocalizedNavigate } from '@/hooks/useLocale';
 import type { QuizAnswer } from '@/lib/apiTypes';
 import { withPromoParams } from '@/lib/promoUrl';
 
@@ -18,7 +20,8 @@ interface CalculatingRouteState {
 
 const CalculatingPage = () => {
   const location = useLocation();
-  const navigate = useNavigate();
+  const navigate = useLocalizedNavigate();
+  const { t } = useTranslation();
   const state = location.state as CalculatingRouteState | null;
 
   const [progress, setProgress] = useState(0);
@@ -117,7 +120,7 @@ const CalculatingPage = () => {
 
         {/* Text */}
         <p className="text-sm md:text-base text-muted-foreground text-center max-w-md leading-relaxed">
-          We're analyzing your answers to reveal your personality type and build your personalized profile report.
+          {t('calculating.body')}
         </p>
       </div>
     </div>

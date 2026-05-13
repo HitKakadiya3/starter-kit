@@ -102,9 +102,11 @@ export const ESTP: PremiumTypeData = {
   topGrowthChallenges: ["Before you act, ask where this still matters in five years", "Stay in the quiet seasons of a relationship; the reward is on the other side of the plateau", "Let yourself feel what you feel — suppressing it just pushes it into the body"],
   famousPeople: [
     { name: "Ernest Hemingway", role: "Writer", reason: "Lived hard, wrote lean, pursued experience as the raw material" },
+    { name: "Toyotomi Hideyoshi", role: "Warlord & unifier of Japan", reason: "Bold, opportunistic, action-first leader who climbed from foot soldier to ruler" },
     { name: "Madonna", role: "Musician", reason: "Bold, reinventing, risk-taking career across decades" },
     { name: "Bruce Willis", role: "Actor", reason: "Cool-headed action presence with a dry wit" },
     { name: "Eddie Murphy", role: "Comedian & actor", reason: "Electric, improvisational, unafraid of the crowd" },
+    { name: "Rikidōzan", role: "Pro wrestler", reason: "Charismatic showman who turned raw physicality and presence into national stardom" },
     { name: "Winston Churchill", role: "UK Prime Minister", reason: "Bold, pragmatic, decisive in wartime crisis" },
     { name: "Han Solo", role: "Fictional (Star Wars)", reason: "Improvisational, charming, bold under pressure" },
     { name: "Jack Sparrow", role: "Fictional (Pirates of the Caribbean)", reason: "Clever, opportunistic, thrives in chaos" },

@@ -14,8 +14,9 @@
 import { useCallback, useEffect, useState } from "react";
 
 import { apiPost } from "@/lib/api";
+import { pushDataLayer } from "@/lib/analytics";
 import { getSession, patchSession } from "@/lib/session";
-import { stripePromise } from "@/lib/stripe";
+import { getStripePromise, type PaymentMode } from "@/lib/stripe";
 
 export type PaymentIntentState =
   | "idle"
@@ -24,6 +25,36 @@ export type PaymentIntentState =
   | "confirming"
   | "ready"
   | "error";
+
+/**
+ * Stripe `payment_method_type` values the frontend may send when creating a
+ * PaymentIntent. The card path sends `'card'`; the ECE wallet path (Google
+ * Pay / Apple Pay) sends `''` — the backend rejects `'card'` for the wallet
+ * surface and the Postman contract for `POST create-payment-intent` shows
+ * `payment_method_type: ""` as the canonical wallet value. ECE does not
+ * differentiate the chosen wallet at create-intent time, so a single empty
+ * value covers both GPay and Apple Pay.
+ *
+ * PayPal is intentionally excluded — it uses its own native SDK lifecycle
+ * (see `usePayPalCheckout`) and never creates a Stripe intent.
+ *
+ * Cache-key semantics: card and wallet surfaces use distinct
+ * `payment_method_type` values, so each surface keeps its own cache entry
+ * (`isKeyedByMatch` does a byte-for-byte equality check on `methodType`).
+ * Switching surfaces forces a fresh intent — intentional, since the backend
+ * treats the two values as different intent kinds.
+ */
+export type PaymentIntentMethodType = "card" | "";
+
+/**
+ * The `payment_method_type` value the ECE wallet path sends to
+ * `POST /payment/stripe/create-payment-intent`. Empty string per the
+ * backend's Postman contract — `'card'` is rejected on the wallet path.
+ * Consumers (`<CheckoutForm>` ECE onConfirm, etc.) MUST import this
+ * constant rather than hard-coding the literal so the value has a single
+ * source of truth.
+ */
+export const WALLET_METHOD_TYPE: PaymentIntentMethodType = "";
 
 export interface ConfirmResponse {
   cross_sale: { is_compulsory: boolean; [k: string]: unknown };
@@ -46,12 +77,13 @@ export interface UsePaymentIntentResult {
   retry: () => void;
   /**
    * Creates (or reuses a cached) PaymentIntent for the requested method.
-   * Called on demand — when the user clicks the Card / PayPal / GPay button.
-   * Resolves to the Stripe `client_secret` + `id`; the same values are also
-   * exposed via `clientSecret` / `intentId` after the state transitions to
+   * Called on demand — Card or Google Pay only; PayPal goes through
+   * `@paypal/paypal-js` separately via `usePayPalCheckout`. Resolves to
+   * the Stripe `client_secret` + `id`; the same values are also exposed
+   * via `clientSecret` / `intentId` after the state transitions to
    * `'ready'`.
    */
-  createIntent: (methodType: string) => Promise<{
+  createIntent: (methodType: PaymentIntentMethodType) => Promise<{
     clientSecret: string;
     intentId: string;
   }>;
@@ -72,10 +104,10 @@ interface CachedIntent {
     qidRaw: number;
     prcId: string;
     mdid: string;
-    /** The `payment_method_type` the intent was created for. Added so a
-     *  user who clicks Card first and then PayPal gets a new intent with
-     *  the right type, rather than reusing the card intent. */
-    methodType: string;
+    /** The `payment_method_type` the intent was created for. Caching is
+     *  keyed by method too so a user who switches Stripe methods gets a
+     *  fresh intent with the right type. */
+    methodType: PaymentIntentMethodType;
   };
   createdAt: number;
 }
@@ -97,7 +129,7 @@ interface StripeLike {
 function isKeyedByMatch(
   cached: CachedIntent,
   session: ReturnType<typeof getSession>,
-  methodType: string,
+  methodType: PaymentIntentMethodType,
 ): boolean {
   return (
     cached.keyedBy.qidRaw === session.qidRaw &&
@@ -124,7 +156,7 @@ function stripStripeParamsFromSearch(search: string): string {
   return remaining ? `?${remaining}` : "";
 }
 
-export function usePaymentIntent(): UsePaymentIntentResult {
+export function usePaymentIntent(mode: PaymentMode = "sandbox"): UsePaymentIntentResult {
   const [state, setState] = useState<PaymentIntentState>("idle");
   const [clientSecret, setClientSecret] = useState<string | undefined>(undefined);
   const [intentId, setIntentId] = useState<string | undefined>(undefined);
@@ -153,7 +185,7 @@ export function usePaymentIntent(): UsePaymentIntentResult {
    * shape `{ client_secret, id }` (Postman contract + PRD §4.3).
    */
   const createIntent = useCallback(
-    async (methodType: string): Promise<{
+    async (methodType: PaymentIntentMethodType): Promise<{
       clientSecret: string;
       intentId: string;
     }> => {
@@ -230,7 +262,7 @@ export function usePaymentIntent(): UsePaymentIntentResult {
     let pollTimeoutHandle: ReturnType<typeof setTimeout> | null = null;
 
     async function run() {
-      const stripe = (await stripePromise) as StripeLike | null;
+      const stripe = (await getStripePromise(mode)) as StripeLike | null;
       if (cancelled) return;
 
       // Mount step A — URL-return detection (PRD §4.4.4 step 1).
@@ -277,6 +309,7 @@ export function usePaymentIntent(): UsePaymentIntentResult {
           setState("recovering");
           const res = await stripe.retrievePaymentIntent(urlSecret);
           if (cancelled) return;
+          pushDataLayer({ event: "stripe_payment_failed" });
           setError(
             res.paymentIntent?.last_payment_error?.message ?? "Payment failed",
           );
@@ -366,9 +399,10 @@ export function usePaymentIntent(): UsePaymentIntentResult {
       if (pollTimeoutHandle) clearTimeout(pollTimeoutHandle);
     };
     // `attempt` drives re-entry for `retry()`. Other inputs are read from
-    // sessionStorage on each run, so no further deps are needed.
+    // sessionStorage on each run; `mode` is captured via closure and is
+    // stable per CheckoutForm mount.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [attempt]);
+  }, [attempt, mode]);
 
   const retry = useCallback(() => {
     setError(undefined);

@@ -102,9 +102,11 @@ export const ESFJ: PremiumTypeData = {
   topGrowthChallenges: ["Ask for what you need out loud — the people you love cannot read your mind", "When someone takes a path different from your tradition, lead with curiosity, not correction", "Build routines that refill you: solitude, rest, honest self-reflection"],
   famousPeople: [
     { name: "Taylor Swift", role: "Musician", reason: "Warm, community-building, attentive to her fan relationships and traditions" },
+    { name: "Empress Shōken", role: "Empress of Japan", reason: "Warm, civic-minded patron who organised support for education and welfare" },
     { name: "Jennifer Garner", role: "Actress", reason: "Warm, organised, known for family-centred and community-centred living" },
     { name: "Hugh Jackman", role: "Actor", reason: "Warm, gracious, famously kind, attentive to the people around him" },
     { name: "Sarah, Duchess of York", role: "Royal", reason: "Expressive warmth, community work, devotion to family" },
+    { name: "Tsuda Umeko", role: "Educator", reason: "Devoted community-builder who founded a school and nurtured generations of students" },
     { name: "Sally Field", role: "Actress", reason: "Emotionally accessible, warm, widely-beloved through a long career" },
     { name: "Molly Weasley", role: "Fictional (Harry Potter)", reason: "Fiercely loving family matriarch who holds her people together" },
     { name: "Monica Geller", role: "Fictional (Friends)", reason: "Organised, caring, the host who holds the friend group together" },

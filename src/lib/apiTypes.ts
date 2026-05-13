@@ -67,7 +67,8 @@ export interface QuizSubmitRequestBody {
   };
   landing_url_detail: {
     landing_url: string;
-    landing_time: number | null;
+    /** `Y-m-d H:i:s` in Asia/Jerusalem (the backend's local timezone). */
+    landing_time: string | null;
   };
   geo_data: { city: string; region: string };
 }
@@ -79,4 +80,54 @@ export interface QuizSubmitResponse {
   pricing_info?: PricingInfo;
   redirect_page?: string;
   [k: string]: unknown;
+}
+
+// PayPal create-order request — POST /payment/paypal/first-sale/payments/create-order
+// Backend creates the PayPal order (including vault attributes) using
+// server-held REST credentials. Done server-side because PayPal rejects
+// vault create-order calls made from the browser-minted SDK token with
+// `NOT_AUTHORIZED`. The backend derives amount/currency from `prc_id` to
+// prevent tampering, so the client only sends identifiers.
+//
+// Body shape mirrors `payment/stripe/create-payment-intent` so the same
+// session-derived identifiers go in. `pricing_discount` is `{ mdid }` when
+// a discount is set and an empty string otherwise — backend expects both
+// shapes.
+export interface PayPalCreateOrderRequestBody {
+  email?: string;
+  quiz_result_id?: number;
+  // Backend requires this field even when empty (mirrors create-payment-intent).
+  user_on_iqbooster: string;
+  payment_method_type: "paypal";
+  prc_id: string;
+  pricing_discount: { mdid: string } | "";
+  return_url: string;
+  cancel_url: string;
+}
+
+export interface PayPalCreateOrderResponse {
+  order_id: string;
+  // Backend echoes PayPal's full order object; we only consume `order_id`,
+  // but keep the shape open so additional fields don't break typecheck.
+  [k: string]: unknown;
+}
+
+// PayPal native confirm request — POST /payment/paypal/first-sale/payments/confirm
+export interface PayPalConfirmRequestBody {
+  quiz_result_id: number;
+  user_on_iqbooster: string;
+  prc_id: string;
+  pricing_discount: string;
+  payment_method: "paypal";
+  payment_status: "paid";
+  charge_id: string;
+  paypal_order_id: string;
+  item_price: number;
+  paypal_customer_email: string;
+  payment_method_id: string;
+  paypal_customer_id: string;
+}
+
+export interface PayPalConfirmResponse {
+  redirect_page: string;
 }

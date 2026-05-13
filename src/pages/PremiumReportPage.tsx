@@ -1,17 +1,239 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { useLocation, useNavigate, useSearchParams } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
+import { useLocation, useSearchParams } from 'react-router-dom';
 import { useResults } from '@/hooks/useResults';
 import { useRedirectGuard } from '@/hooks/useRedirectGuard';
-import { getPremiumTypeData, type PremiumTypeData, type CognitiveFunction } from '@/utils/premiumTypeData';
+import { useCustomerThankyou, type CategoryResult } from '@/hooks/useCustomerThankyou';
+import { type PremiumTypeData, type CognitiveFunction } from '@/utils/premiumTypeData';
+import { getPremiumTypeDataLocalized } from '@/utils/localizedData';
+import { useLocale, useLocalizedNavigate } from '@/hooks/useLocale';
+import { withPromoParams } from '@/lib/promoUrl';
+import {
+  qidParamForRoute,
+  resolveEffectiveRedirect,
+  resolveRedirect,
+} from '@/lib/redirectRouter';
+import { getSession } from '@/lib/session';
 import { getAvatarForType, type Gender } from '@/utils/avatarMap';
-import type { Scores, TraitPercentage } from '@/utils/scoring';
+import { initialScores, type Scores, type TraitPercentage } from '@/utils/scoring';
 import { readResult, type MbtiResult } from '@/utils/mbtiResult';
 import { stressBaselineByType, socialBatteryByType } from '@/utils/types';
 import { Button } from '@/components/ui/button';
+import { pdf } from '@react-pdf/renderer';
+import { ReportPdf } from '@/pdf/ReportPdf';
+import { getFamousAvatar } from '@/utils/famousAvatars';
+import careerPreview from '@/assets/career-icon-orange.png';
+
+/**
+ * Tagged union describing where the rendered report's data comes from.
+ * `client` powers the dev preview path (existing `state.scores` flow).
+ * `api` powers the live thankyou-driven render added in Module 5.
+ */
+type ReportSource =
+  | { kind: 'client'; scores: Scores; careerPurchased?: boolean }
+  | {
+      kind: 'api';
+      // The encrypted qid from the URL — propagated so the "View career
+      // report" button can navigate to `/career-report?qid=...` and the
+      // page can be opened in a fresh browser without prior session state.
+      qid: string | null;
+      type: string;
+      identity: 'A' | 'T';
+      turbulentPercent: number;
+      socialBattery: number;
+      stressMarker: number;
+      traitPercentages: TraitPercentage[] | null;
+      careerPurchased?: boolean;
+    };
+
+const VALID_TYPES = new Set([
+  'INTJ', 'INTP', 'ENTJ', 'ENTP',
+  'INFJ', 'INFP', 'ENFJ', 'ENFP',
+  'ISTJ', 'ISFJ', 'ESTJ', 'ESFJ',
+  'ISTP', 'ISFP', 'ESTP', 'ESFP',
+]);
+
+const AXIS_LABEL_MAP: Array<{
+  dim: TraitPercentage['dim'];
+  leftLabel: string;
+  rightLabel: string;
+  trait: keyof MbtiResult['traits'];
+  firstLetter: string;
+  typeIndex: number;
+}> = [
+  { dim: 'E/I', leftLabel: 'Extraversion', rightLabel: 'Introversion', trait: 'EI', firstLetter: 'E', typeIndex: 0 },
+  { dim: 'S/N', leftLabel: 'Sensing',      rightLabel: 'Intuition',    trait: 'SN', firstLetter: 'S', typeIndex: 1 },
+  { dim: 'T/F', leftLabel: 'Thinking',     rightLabel: 'Feeling',      trait: 'TF', firstLetter: 'T', typeIndex: 2 },
+  { dim: 'J/P', leftLabel: 'Judging',      rightLabel: 'Perceiving',   trait: 'JP', firstLetter: 'J', typeIndex: 3 },
+];
+
+/**
+ * Adapt the persisted `MbtiResult` into the `TraitPercentage[]` shape that
+ * `<HeroSection>` expects. Returns `null` when the persisted result is
+ * unavailable so the caller can fall back to a type-only synthesis.
+ */
+function adaptMbtiResultToTraitPercentages(result: MbtiResult | null): TraitPercentage[] | null {
+  if (!result) return null;
+  return AXIS_LABEL_MAP.map(({ dim, leftLabel, rightLabel, trait, firstLetter }) => {
+    const t = result.traits[trait];
+    const dominantLabel = t.letter === firstLetter ? leftLabel : rightLabel;
+    return {
+      dim,
+      leftLabel,
+      rightLabel,
+      dominantLabel,
+      percentage: t.percent,
+    };
+  });
+}
+
+/**
+ * Map the backend's `category_result` array onto the `TraitPercentage[]`
+ * shape `<HeroSection>` expects. The API gives `sixteentypes_full_result.percent`
+ * as the percentage of the *first* pole named in `category` (e.g. for
+ * `extraversion_introversion` it is `% Extraversion`), so the dominant
+ * pole's percentage is `100 - percent` when the dominant `letter` is the
+ * second pole. Output uses the `[50, 100]` dominant-percent convention
+ * `<HeroSection>`'s bar geometry expects.
+ *
+ * Returns `null` when the array is missing, malformed, or doesn't include
+ * all four MBTI axes — callers fall back to the type-only synthesis.
+ */
+const CATEGORY_AXIS_MAP: Record<
+  string,
+  { dim: TraitPercentage['dim']; leftLabel: string; rightLabel: string; firstLetter: string }
+> = {
+  extraversion_introversion: { dim: 'E/I', leftLabel: 'Extraversion', rightLabel: 'Introversion', firstLetter: 'E' },
+  sensing_intuition:         { dim: 'S/N', leftLabel: 'Sensing',      rightLabel: 'Intuition',    firstLetter: 'S' },
+  thinking_feeling:          { dim: 'T/F', leftLabel: 'Thinking',     rightLabel: 'Feeling',      firstLetter: 'T' },
+  judging_perceiving:        { dim: 'J/P', leftLabel: 'Judging',      rightLabel: 'Perceiving',   firstLetter: 'J' },
+};
+
+function mapCategoryResultToTraitPercentages(
+  categories: CategoryResult[] | undefined,
+): TraitPercentage[] | null {
+  if (!Array.isArray(categories) || categories.length === 0) return null;
+  const byCategory = new Map(categories.map((c) => [c.category, c]));
+  const out: TraitPercentage[] = [];
+  for (const [key, axis] of Object.entries(CATEGORY_AXIS_MAP)) {
+    const cat = byCategory.get(key);
+    const full = cat?.sixteentypes_full_result;
+    if (!cat || !full || typeof full.percent !== 'number' || typeof full.letter !== 'string') {
+      return null;
+    }
+    const dominantIsFirst = full.letter === axis.firstLetter;
+    // Clamp to [50, 100] so the bar geometry never inverts on edge values.
+    const dominantPercent = Math.max(
+      50,
+      Math.min(100, Math.round(dominantIsFirst ? full.percent : 100 - full.percent)),
+    );
+    out.push({
+      dim: axis.dim,
+      leftLabel: axis.leftLabel,
+      rightLabel: axis.rightLabel,
+      dominantLabel: dominantIsFirst ? axis.leftLabel : axis.rightLabel,
+      percentage: dominantPercent,
+    });
+  }
+  return out;
+}
+
+/**
+ * Type-only fallback when neither `category_result` nor a persisted
+ * `MbtiResult` is available. Renders the four hero bars at 50% with the
+ * dominant label derived from each letter of the type code (e.g. ESFP →
+ * Extraversion, Sensing, Feeling, Perceiving). Without this the api path
+ * would render a bar-less hero on responses that omit `category_result`.
+ */
+function buildTraitPercentagesFromType(type: string): TraitPercentage[] {
+  return AXIS_LABEL_MAP.map(({ dim, leftLabel, rightLabel, firstLetter, typeIndex }) => ({
+    dim,
+    leftLabel,
+    rightLabel,
+    dominantLabel: type[typeIndex] === firstLetter ? leftLabel : rightLabel,
+    percentage: 50,
+  }));
+}
+
+// Fetch an image URL and turn it into a data: URL so react-pdf can embed it
+// without a network round-trip during render.
+async function fetchAsDataUrl(url: string): Promise<string | null> {
+  try {
+    const res = await fetch(url);
+    const blob = await res.blob();
+    return await new Promise<string>((resolve, reject) => {
+      const fr = new FileReader();
+      fr.onload = () => resolve(fr.result as string);
+      fr.onerror = reject;
+      fr.readAsDataURL(blob);
+    });
+  } catch {
+    return null;
+  }
+}
+
+async function downloadReportPdf(args: {
+  data: import('@/utils/premiumTypeData').PremiumTypeData;
+  type: string;
+  traitPercentages: import('@/utils/scoring').TraitPercentage[];
+  avatarUrl?: string | null;
+  turbulentPercent?: number;
+  stressBaseline?: number;
+  locale?: 'en' | 'ja';
+}) {
+  const avatarDataUrl = args.avatarUrl ? await fetchAsDataUrl(args.avatarUrl) : null;
+
+  // Pre-fetch every famous-person avatar in parallel so react-pdf can embed
+  // them as data URLs without doing network I/O during render. Names without
+  // a mapped PNG are skipped — the PDF falls back to coloured initials.
+  //
+  // The avatar map (famousAvatars.ts) is keyed by English names, but the JA
+  // dataset stores katakana/kanji names ("トーマス・エジソン"), so a direct
+  // lookup misses every entry in JP reports. We fetch the EN dataset for the
+  // same type and pair entries by index — the EN and JA famousPeople arrays
+  // are kept in lockstep — to recover the English avatar key, then store the
+  // result under the *JA* name so the PDF (which renders `p.name` from
+  // `args.data`) finds it.
+  const enData = args.locale === 'ja' ? getPremiumTypeDataLocalized(args.type, 'en') : null;
+  const famousAvatarEntries = await Promise.all(
+    args.data.famousPeople.map(async (p, i) => {
+      const lookupName = enData?.famousPeople[i]?.name ?? p.name;
+      const url = getFamousAvatar(lookupName);
+      if (!url) return null;
+      const dataUrl = await fetchAsDataUrl(url);
+      return dataUrl ? ([p.name, dataUrl] as const) : null;
+    })
+  );
+  const famousAvatars = Object.fromEntries(
+    famousAvatarEntries.filter((e): e is readonly [string, string] => e !== null)
+  );
+
+  const blob = await pdf(
+    <ReportPdf
+      data={args.data}
+      type={args.type}
+      traitPercentages={args.traitPercentages}
+      avatarDataUrl={avatarDataUrl}
+      famousAvatars={famousAvatars}
+      turbulentPercent={args.turbulentPercent}
+      stressBaseline={args.stressBaseline}
+      locale={args.locale}
+    />
+  ).toBlob();
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `16types-${args.type}.pdf`;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  URL.revokeObjectURL(url);
+}
+
 
 import {
   Sparkles, CheckCircle2, AlertTriangle, Brain, Heart, Users, Briefcase,
-  TrendingUp, Star, Quote, Printer, Flame, Battery, Compass, Shield,
+  TrendingUp, Star, Quote, Download, Flame, Battery, Compass, Shield,
   Scale, ClipboardList, BarChart, Building, GraduationCap, Truck,
   Lightbulb, Target, ArrowRight, Sunrise,
 } from 'lucide-react';
@@ -20,30 +242,36 @@ import {
 /*  Premium Personality Deep-Dive Report — 12 sections                */
 /* ------------------------------------------------------------------ */
 
-const SECTIONS = [
-  { id: 'hero', label: 'Overview', icon: Sparkles },
-  { id: 'portrait', label: 'Type Portrait', icon: Quote },
-  { id: 'cognitive', label: 'How Your Mind Works', icon: Brain },
-  { id: 'strengths', label: 'Strengths & Weaknesses', icon: Shield },
-  { id: 'stress', label: 'Under Pressure', icon: Flame },
-  { id: 'relationships', label: 'Relationships & Love', icon: Heart },
-  { id: 'friendships', label: 'Friendships', icon: Users },
-  { id: 'career', label: 'Career Paths', icon: Briefcase },
-  { id: 'growth', label: 'Growth Roadmap', icon: TrendingUp },
-  { id: 'famous', label: 'Famous People', icon: Star },
-  { id: 'comparisons', label: 'Type Comparisons', icon: Compass },
-  { id: 'summary', label: 'Summary & Affirmations', icon: Sunrise },
-];
+const useSections = () => {
+  const { t } = useTranslation();
+  return [
+    { id: 'hero', label: t('report.sections.overview'), icon: Sparkles },
+    { id: 'portrait', label: t('report.sections.portrait'), icon: Quote },
+    { id: 'cognitive', label: t('report.sections.cognitive'), icon: Brain },
+    { id: 'strengths', label: t('report.sections.strengths'), icon: Shield },
+    { id: 'stress', label: t('report.sections.stress'), icon: Flame },
+    { id: 'relationships', label: t('report.sections.relationships'), icon: Heart },
+    { id: 'friendships', label: t('report.sections.friendships'), icon: Users },
+    { id: 'career', label: t('report.sections.career'), icon: Briefcase },
+    { id: 'growth', label: t('report.sections.growth'), icon: TrendingUp },
+    { id: 'famous', label: t('report.sections.famous'), icon: Star },
+    { id: 'comparisons', label: t('report.sections.comparisons'), icon: Compass },
+    { id: 'summary', label: t('report.sections.summary'), icon: Sunrise },
+  ];
+};
 
 const PremiumReportPage = () => {
   const location = useLocation();
   const [searchParams] = useSearchParams();
   const qid = searchParams.get('qid');
-  const scores = (location.state as { scores: Scores } | null)?.scores;
+  const navigate = useLocalizedNavigate();
+  const locState = location.state as { scores: Scores; careerPurchased?: boolean } | null;
+  const scores = locState?.scores;
+  const careerPurchased = locState?.careerPurchased ?? false;
 
   // Dev-test path: scores explicitly passed via state — skip the resume guard
   // so local MBTI previews work without a live backend qid.
-  if (scores) return <ReportContent scores={scores} />;
+  if (scores) return <ReportContent source={{ kind: 'client', scores, careerPurchased }} />;
 
   return <ReportGuardedPlaceholder qid={qid} />;
 };
@@ -57,36 +285,200 @@ const ReportGuardedPlaceholder = ({ qid }: { qid: string | null }) => {
       </div>
     );
   }
-  // Module 5 is TBD — once it wires POST /customer/thankyou, it will derive
-  // real scores (or a server-declared personality_type) and render the full
-  // report. Until then, a qid-only landing shows this placeholder.
-  return <ReportComingSoon qid={qid!} />;
+  return <ReportLiveLoader qid={qid} />;
 };
 
-const ReportComingSoon = ({ qid }: { qid: string }) => (
-  <div className="min-h-screen bg-background flex items-center justify-center px-4">
-    <div className="max-w-md w-full text-center space-y-5 p-8 rounded-2xl border border-border bg-card shadow-sm">
-      <div className="w-14 h-14 rounded-full bg-primary/10 flex items-center justify-center mx-auto">
-        <Sparkles className="w-7 h-7 text-primary" />
-      </div>
-      <h1 className="text-2xl font-bold text-foreground">Your report is on the way</h1>
-      <p className="text-sm text-muted-foreground leading-relaxed">
-        Thanks for completing the test. Full report rendering goes live
-        in the next release — your responses are already saved against
-        quiz id <code className="text-xs px-1 py-0.5 rounded bg-muted">{qid}</code>.
-      </p>
-    </div>
-  </div>
-);
+/**
+ * Mount-time loader that drives the live report from `customer/thankyou`.
+ * Renders a full-screen spinner while the call is in flight, an error
+ * variant on failure, and `<ReportContent kind="api">` on success.
+ */
+const ReportLiveLoader = ({ qid }: { qid: string | null }) => {
+  const { t } = useTranslation();
+  const navigate = useLocalizedNavigate();
+  const { data, loading, error } = useCustomerThankyou();
 
-const ReportContent = ({ scores }: { scores: Scores }) => {
-  const { type, traitPercentages } = useResults(scores);
-  const data = getPremiumTypeData(type);
+  // The customer/thankyou response carries `redirect_page` (mirrors the funnel
+  // enum). The resume guard skips the /questions/results validation for
+  // /results because that endpoint only accepts the raw integer qid and the
+  // URL here carries the encrypted form, so this is the only place the page
+  // can detect that the backend believes the user still belongs on
+  // /checkout / /cross-sell / /details. Apply the same cascading override as
+  // DetailsPage so client-side `crossSellResolved` / `customerUpdateSubmitted`
+  // flags trump a stale backend echo, then bounce. `qidParamForRoute`
+  // switches the URL qid back to the raw integer for funnel routes — the
+  // pages they target call /questions/results which rejects the encrypted id.
+  const redirectRoute = useMemo<string | null>(() => {
+    if (!data?.redirect_page) return null;
+    const effective = resolveEffectiveRedirect(data.redirect_page, getSession());
+    const route = resolveRedirect(effective);
+    return route === '/results' ? null : route;
+  }, [data]);
+
+  useEffect(() => {
+    if (!data || !redirectRoute) return;
+    const qidParam = qidParamForRoute(
+      redirectRoute,
+      data.quiz_result_id,
+      data.encrypted_quiz_result_id,
+    );
+    navigate(withPromoParams(`${redirectRoute}?qid=${qidParam}`), { replace: true });
+  }, [data, redirectRoute, navigate]);
+
+  // Hold the spinner while the redirect navigation flushes — otherwise the
+  // report would render a frame before unmount.
+  if (loading || redirectRoute) {
+    return (
+      <div className="min-h-screen bg-muted/30 flex flex-col items-center justify-center gap-6">
+        <svg className="animate-spin h-14 w-14 text-primary" viewBox="0 0 24 24">
+          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
+          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+        </svg>
+        <p className="text-base font-semibold text-foreground">{t('details.generating')}</p>
+      </div>
+    );
+  }
+
+  if (error) {
+    return <ReportErrorState qid={qid} />;
+  }
+
+  if (!data) {
+    // Defensive: the loading/error gates above should have covered this.
+    return null;
+  }
+
+  // Validate the personality type against the canonical 16-type allow-list
+  // before passing it downstream — `getPremiumTypeData` would throw on any
+  // non-canonical value (R3 in plan).
+  const detail = data.sixteentypes_report_detail;
+  if (!detail || !VALID_TYPES.has(detail.personality_type)) {
+    console.warn('[customer/thankyou] non-canonical personality_type:', detail?.personality_type);
+    return <ReportErrorState qid={qid} />;
+  }
+
+  // Prefer the backend's per-axis breakdown (real test percentages); fall
+  // back to a persisted client-side `MbtiResult` (dev tools / pre-API
+  // sessions); finally synthesise from the type code so bars always render.
+  const traitPercentages =
+    mapCategoryResultToTraitPercentages(detail.category_result) ??
+    adaptMbtiResultToTraitPercentages(readResult()) ??
+    buildTraitPercentagesFromType(detail.personality_type);
+  const source: ReportSource = {
+    kind: 'api',
+    qid,
+    type: detail.personality_type,
+    identity: detail.identity,
+    turbulentPercent: detail.turbulent_percent,
+    socialBattery: detail.social_battery,
+    stressMarker: detail.stress_marker,
+    traitPercentages,
+    careerPurchased: data.is_cross_sale_transaction_completed ?? false,
+  };
+  return <ReportContent source={source} />;
+};
+
+/**
+ * Inline error variant rendered when the thankyou call fails or the response
+ * is structurally invalid. Surfaces the qid for support and offers a retry +
+ * a back-to-home action.
+ */
+const ReportErrorState = ({ qid }: { qid: string | null }) => {
+  const { t } = useTranslation();
+  const navigate = useLocalizedNavigate();
+  return (
+    <div className="min-h-screen bg-background flex items-center justify-center px-4">
+      <div className="max-w-md w-full text-center space-y-5 p-8 rounded-2xl border border-border bg-card shadow-sm">
+        <div className="w-14 h-14 rounded-full bg-destructive/10 flex items-center justify-center mx-auto">
+          <AlertTriangle className="w-7 h-7 text-destructive" />
+        </div>
+        <h1 className="text-2xl font-bold text-foreground">{t('report.error.title')}</h1>
+        <p className="text-sm text-muted-foreground leading-relaxed">
+          {t('report.error.body', { qid: qid ?? '' })}
+        </p>
+        <div className="flex flex-col gap-2">
+          <Button onClick={() => window.location.reload()}>{t('report.error.retry')}</Button>
+          <Button variant="outline" onClick={() => navigate('/')}>
+            {t('report.error.back')}
+          </Button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+const DOWNLOAD_EVENT = 'report:download-pdf';
+const handleSavePdf = () => window.dispatchEvent(new CustomEvent(DOWNLOAD_EVENT));
+
+const ReportContent = ({ source }: { source: ReportSource }) => {
+  const { t } = useTranslation();
+  const navigate = useLocalizedNavigate();
+  const careerPurchased = source.careerPurchased ?? false;
+
+  // Single navigation entry-point for "View career report" — keeps the
+  // dev-preview (state.scores) and live (qid in URL) paths aligned across
+  // the desktop sidebar, the inline banner, and the mobile banner.
+  const goToCareerReport = () => {
+    if (source.kind === 'client') {
+      navigate('/career-report', { state: { scores: source.scores } });
+      return;
+    }
+    navigate(
+      source.qid
+        ? `/career-report?qid=${encodeURIComponent(source.qid)}`
+        : '/career-report',
+    );
+  };
+
+  // `useResults` must be called unconditionally to satisfy React's rules of
+  // hooks. On the api path, `initialScores` produces a discarded zero-result
+  // — the api branch consumes `source.type` / `source.traitPercentages`
+  // directly. The internal `useMemo` chain inside `useResults` is cheap.
+  const clientResults = useResults(source.kind === 'client' ? source.scores : initialScores);
+  const type = source.kind === 'client' ? clientResults.type : source.type;
+  // Memoize so the empty-array fallback on the api path keeps a stable
+  // reference across renders — otherwise the useEffect below sees a new
+  // dependency every render and reattaches the download listener.
+  const traitPercentages = useMemo<TraitPercentage[]>(
+    () =>
+      source.kind === 'client'
+        ? clientResults.traitPercentages
+        : (source.traitPercentages ?? []),
+    [source, clientResults.traitPercentages],
+  );
+
+  const stressMarkerOverride = source.kind === 'api' ? source.stressMarker : undefined;
+  const socialBatteryOverride = source.kind === 'api' ? source.socialBattery : undefined;
+
+  const locale = useLocale();
+  const data = getPremiumTypeDataLocalized(type, locale);
   const accent = data.accentColor;
 
   // Read the persisted, axis-rich result so gauges can reflect the user's
   // actual test outcome. Falls back to per-type baselines when missing.
   const result = useMemo<MbtiResult | null>(() => readResult(), []);
+
+  // Listen for download requests dispatched by the Sidebar / Summary buttons.
+  useEffect(() => {
+    const onDownload = () => {
+      const gender = (typeof window !== 'undefined' ? localStorage.getItem('user_gender') : null) as Gender;
+      const avatarUrl = getAvatarForType(type, gender);
+      const downloadTurbulentPercent =
+        source.kind === 'api' ? source.turbulentPercent : result?.turbulentPercent;
+      void downloadReportPdf({
+        data,
+        type,
+        traitPercentages,
+        avatarUrl,
+        turbulentPercent: downloadTurbulentPercent,
+        stressBaseline: stressBaselineByType[type] ?? 50,
+        locale,
+      });
+    };
+    window.addEventListener(DOWNLOAD_EVENT, onDownload);
+    return () => window.removeEventListener(DOWNLOAD_EVENT, onDownload);
+  }, [data, type, traitPercentages, result, source, locale]);
+
 
   return (
     <div
@@ -94,22 +486,123 @@ const ReportContent = ({ scores }: { scores: Scores }) => {
       style={{ ['--report-accent' as string]: accent }}
     >
       <PrintStyles />
+      <header className="w-full border-b border-border bg-background/80 backdrop-blur-sm no-print">
+        <div className="max-w-[1280px] mx-auto px-4 md:px-8 flex items-center h-20">
+          <div className="flex items-center gap-3">
+            <svg width="40" height="40" viewBox="0 0 40 40" className="flex-shrink-0 w-7 h-7 md:w-10 md:h-10">
+              {[0, 45, 90, 135, 180, 225, 270, 315].map((angle, i) => {
+                const rad = (angle * Math.PI) / 180;
+                const r = 16;
+                const cx = 20 + r * Math.cos(rad - Math.PI / 2);
+                const cy = 20 + r * Math.sin(rad - Math.PI / 2);
+                return (
+                  <g key={angle}>
+                    <line x1={20} y1={20} x2={cx} y2={cy} stroke="hsl(270 30% 80%)" strokeWidth="1" />
+                    <circle cx={cx} cy={cy} r={i % 2 === 0 ? 3 : 2.2} fill={i % 2 === 0 ? 'hsl(270 50% 45%)' : 'hsl(270 40% 65%)'} />
+                  </g>
+                );
+              })}
+              {[30, 120, 210, 300].map((angle) => {
+                const rad = (angle * Math.PI) / 180;
+                const r = 8;
+                const cx = 20 + r * Math.cos(rad - Math.PI / 2);
+                const cy = 20 + r * Math.sin(rad - Math.PI / 2);
+                return <circle key={angle} cx={cx} cy={cy} r="1.8" fill="hsl(270 50% 55%)" />;
+              })}
+              <circle cx="20" cy="20" r="3" fill="hsl(270 50% 45%)" />
+            </svg>
+            <div className="flex flex-col" style={{ lineHeight: '1.1' }}>
+              <span className="text-lg md:text-2xl font-extrabold uppercase tracking-[0.06em]">
+                <span style={{ color: 'hsl(270 50% 45%)' }}>16</span>
+                <span className="text-foreground"> {t('brand.name')}</span>
+              </span>
+              <span className="text-[9px] md:text-[11px] font-medium tracking-[0.25em] text-muted-foreground">{t('brand.tagline')}</span>
+            </div>
+          </div>
+        </div>
+      </header>
       <div className="lg:flex max-w-[1280px] mx-auto">
-        <Sidebar />
-        <main className="flex-1 min-w-0">
+        <Sidebar
+          careerPurchased={careerPurchased}
+          onViewCareer={goToCareerReport}
+        />
+        <main id="report-content" className="flex-1 min-w-0">
           <HeroSection data={data} type={type} traitPercentages={traitPercentages} />
           <PortraitSection data={data} type={type} />
           <CognitiveSection data={data} />
           <StrengthsSection data={data} />
-          <StressSection data={data} type={type} result={result} />
+          <StressSection data={data} type={type} result={result} markerPositionOverride={stressMarkerOverride} />
           <RelationshipsSection data={data} />
-          <FriendshipsSection data={data} type={type} result={result} />
+          <FriendshipsSection data={data} type={type} result={result} socialBatteryOverride={socialBatteryOverride} />
           <CareerSection data={data} />
+          {careerPurchased && (
+            <div className="px-4 md:px-8 pb-2 no-print">
+              <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-orange-50 to-amber-50 border border-orange-200/60 p-5 max-w-2xl mx-auto">
+                <div className="relative space-y-2">
+                  <div className="flex justify-center -my-3">
+                    <img
+                      src={careerPreview}
+                      alt={t('report.careerPotentialTitle')}
+                      loading="lazy"
+                      className="w-16 h-16 object-contain"
+                    />
+                  </div>
+                  <div className="text-center">
+                    <p className="text-base font-bold text-foreground leading-tight">
+                      {t('report.careerPotentialTitle')}
+                    </p>
+                    <p className="text-xs text-muted-foreground mt-1 leading-snug">
+                      {t('report.careerPotentialBody')}
+                    </p>
+                  </div>
+                  <Button
+                    size="sm"
+                    className="w-full rounded-full font-semibold bg-orange-500 hover:bg-orange-600 text-white"
+                    onClick={goToCareerReport}
+                  >
+                    {t('report.viewReport')}
+                    <ArrowRight className="h-4 w-4 ml-1.5" />
+                  </Button>
+                </div>
+              </div>
+            </div>
+          )}
           <GrowthSection data={data} />
           <FamousSection data={data} />
           <ComparisonsSection data={data} />
           <SummarySection data={data} type={type} />
-          
+          {careerPurchased && (
+            <div className="lg:hidden px-4 md:px-8 pb-12 pt-2 no-print">
+              <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-orange-50 to-amber-50 border border-orange-200/60 p-5">
+                <div className="relative space-y-3">
+                  <div className="flex justify-center -my-3">
+                    <img
+                      src={careerPreview}
+                      alt={t('report.careerPotentialTitle')}
+                      loading="lazy"
+                      className="w-16 h-16 object-contain"
+                    />
+                  </div>
+                  <div className="text-center">
+                    <p className="text-base font-bold text-foreground leading-tight">
+                      {t('report.careerPotentialTitle')}
+                    </p>
+                    <p className="text-xs text-muted-foreground mt-1 leading-snug">
+                      {t('report.careerPotentialBody')}
+                    </p>
+                  </div>
+                  <Button
+                    size="sm"
+                    className="w-full rounded-full font-semibold bg-orange-500 hover:bg-orange-600 text-white"
+                    onClick={goToCareerReport}
+                  >
+                    {t('report.viewReport')}
+                    <ArrowRight className="h-4 w-4 ml-1.5" />
+                  </Button>
+                </div>
+              </div>
+            </div>
+          )}
         </main>
       </div>
       <MobileTabBar />
@@ -121,23 +614,86 @@ const ReportContent = ({ scores }: { scores: Scores }) => {
 
 const PrintStyles = () => (
   <style>{`
-    @media print {
-      .no-print { display: none !important; }
-      .report-section { break-inside: avoid; page-break-inside: avoid; }
-      body { background: white !important; }
-    }
     .report-section { scroll-margin-top: 80px; }
     @keyframes report-fade-up {
       from { opacity: 0; transform: translateY(16px); }
       to   { opacity: 1; transform: translateY(0); }
     }
     .report-fade-in { animation: report-fade-up 0.7s ease-out both; }
+
+    @page {
+      size: A4 portrait;
+      margin: 14mm 14mm 16mm 14mm;
+    }
+
+    @media print {
+      html, body, *, *::before, *::after {
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+        color-adjust: exact !important;
+        animation: none !important;
+        transition: none !important;
+      }
+
+      body { background: white !important; }
+      .no-print, nav, aside, footer { display: none !important; }
+
+      html, body { width: 100% !important; margin: 0 !important; padding: 0 !important; }
+      #report-content, main, .report-main {
+        width: 100% !important;
+        max-width: 170mm !important;
+        margin: 0 auto !important;
+        padding: 0 !important;
+      }
+      #report-content * { max-width: 100% !important; box-sizing: border-box !important; }
+
+      .grid-cols-2,
+      .md\\:grid-cols-2,
+      .lg\\:grid-cols-2 { grid-template-columns: 1fr !important; }
+      .grid-cols-3, .md\\:grid-cols-3, .lg\\:grid-cols-3 {
+        grid-template-columns: 1fr 1fr !important;
+      }
+      .grid-cols-4, .md\\:grid-cols-4, .lg\\:grid-cols-4 {
+        grid-template-columns: 1fr 1fr !important;
+      }
+
+      .report-section {
+        break-before: page;
+        page-break-before: always;
+        break-inside: avoid-page;
+        page-break-inside: avoid;
+      }
+      .report-section:first-of-type {
+        break-before: auto;
+        page-break-before: auto;
+      }
+      .rounded-2xl, .rounded-3xl, .card, .report-card,
+      [class*="shadow-"] {
+        break-inside: avoid-page;
+        page-break-inside: avoid;
+      }
+      h1, h2, h3, h4 { break-after: avoid; page-break-after: avoid; }
+
+      .py-16 { padding-top: 8mm !important; padding-bottom: 8mm !important; }
+      .py-12 { padding-top: 6mm !important; padding-bottom: 6mm !important; }
+      .p-12  { padding: 8mm !important; }
+      .p-8   { padding: 6mm !important; }
+      .gap-8 { gap: 4mm !important; }
+
+      h1, h2, h3, p, li { word-break: break-word; overflow-wrap: anywhere; }
+
+      img { max-width: 100% !important; height: auto !important; }
+
+      a { text-decoration: none !important; color: inherit !important; }
+    }
   `}</style>
 );
 
 /* ===================== Sidebar (desktop) ===================== */
 
-const Sidebar = () => {
+const Sidebar = ({ careerPurchased = false, onViewCareer }: { careerPurchased?: boolean; onViewCareer?: () => void } = {}) => {
+  const { t } = useTranslation();
+  const SECTIONS = useSections();
   const [active, setActive] = useState('hero');
   useEffect(() => {
     const obs = new IntersectionObserver(
@@ -151,13 +707,13 @@ const Sidebar = () => {
       if (el) obs.observe(el);
     });
     return () => obs.disconnect();
-  }, []);
+  }, [SECTIONS]);
 
   return (
     <aside className="hidden lg:block w-64 shrink-0 no-print">
       <div className="sticky top-6 p-6 space-y-1">
         <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-4">
-          Your Report
+          {t('report.yourReport')}
         </p>
         {SECTIONS.map(s => {
           const Icon = s.icon;
@@ -183,17 +739,50 @@ const Sidebar = () => {
             </a>
           );
         })}
-        <div className="pt-4 mt-4 border-t border-border">
-          <Button
-            variant="outline"
-            size="sm"
-            className="w-full"
-            onClick={() => window.print()}
-          >
-            <Printer className="h-4 w-4 mr-2" />
-            Print / Save PDF
-          </Button>
-        </div>
+        {careerPurchased ? (
+          <div className="pt-3 mt-3 border-t border-border">
+            <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-orange-50 to-amber-50 border border-orange-200/60 p-4">
+              <div className="relative space-y-3">
+                <div className="flex justify-center -my-3">
+                  <img
+                    src={careerPreview}
+                    alt={t('report.careerPotentialTitle')}
+                    loading="lazy"
+                    className="w-14 h-14 object-contain"
+                  />
+                </div>
+                <div className="text-center">
+                  <p className="text-sm font-bold text-foreground leading-tight">
+                    {t('report.careerPotentialTitle')}
+                  </p>
+                  <p className="text-[11px] text-muted-foreground mt-0.5 leading-snug">
+                    {t('report.careerPotentialBody')}
+                  </p>
+                </div>
+                <Button
+                  size="sm"
+                  className="w-full rounded-full font-semibold bg-orange-500 hover:bg-orange-600 text-white"
+                  onClick={onViewCareer}
+                >
+                  {t('report.viewReport')}
+                  <ArrowRight className="h-4 w-4 ml-1.5" />
+                </Button>
+              </div>
+            </div>
+          </div>
+        ) : (
+          <div className="pt-3 mt-3 pb-3 border-t border-border">
+            <Button
+              variant="outline"
+              size="sm"
+              className="w-full"
+              onClick={handleSavePdf}
+            >
+              <Download className="h-4 w-4 mr-2" />
+              {t('report.saveAsPdf')}
+            </Button>
+          </div>
+        )}
       </div>
     </aside>
   );
@@ -201,7 +790,9 @@ const Sidebar = () => {
 
 /* ===================== Mobile tab bar ===================== */
 
-const MobileTabBar = () => (
+const MobileTabBar = () => {
+  const SECTIONS = useSections();
+  return (
   <div className="lg:hidden sticky bottom-0 left-0 right-0 z-40 no-print bg-background/95 backdrop-blur border-t border-border">
     <div className="overflow-x-auto">
       <div className="flex gap-1 px-3 py-2 min-w-max">
@@ -222,7 +813,8 @@ const MobileTabBar = () => (
       </div>
     </div>
   </div>
-);
+  );
+};
 
 /* ===================== Section wrapper ===================== */
 
@@ -242,7 +834,7 @@ const Section = ({ id, children, className = '' }: { id: string; children: React
     <section
       ref={ref}
       id={id}
-      className={`report-section px-5 md:px-10 py-12 md:py-16 ${visible ? 'report-fade-in' : 'opacity-0'} ${className}`}
+      className={`report-section px-5 md:px-10 py-10 md:py-14 ${visible ? 'report-fade-in' : 'opacity-0'} ${className}`}
     >
       {children}
     </section>
@@ -269,6 +861,7 @@ const SectionHeader = ({ eyebrow, title, subtitle }: { eyebrow?: string; title: 
 const HeroSection = ({ data, type, traitPercentages }: {
   data: PremiumTypeData; type: string; traitPercentages: TraitPercentage[];
 }) => {
+  const { t } = useTranslation();
   const avatar = getAvatarForType(type, (typeof window !== 'undefined' ? localStorage.getItem('user_gender') : null) as Gender);
   return (
     <Section id="hero" className="!pt-10">
@@ -280,8 +873,11 @@ const HeroSection = ({ data, type, traitPercentages }: {
       >
         <div className="grid md:grid-cols-[1fr,auto] gap-8 items-center">
           <div>
+            <p className="text-[10px] md:text-[11px] font-semibold uppercase tracking-[0.2em] text-white/70 mb-2">
+              {t('report.you')}
+            </p>
             <div className="flex items-center gap-3 mb-4">
-              <span className="inline-flex items-center px-4 py-2 rounded-full bg-white/20 backdrop-blur text-3xl md:text-5xl font-extrabold tracking-widest">
+              <span className="inline-flex items-center py-2 pl-4 pr-[calc(1rem+0.1em)] rounded-full bg-white/20 backdrop-blur text-3xl md:text-5xl font-extrabold tracking-widest">
                 {type}
               </span>
             </div>
@@ -334,10 +930,11 @@ const HeroSection = ({ data, type, traitPercentages }: {
 /* ===================== Section 2 — Portrait ===================== */
 
 const PortraitSection = ({ data, type }: { data: PremiumTypeData; type: string }) => {
+  const { t } = useTranslation();
   const avatar = getAvatarForType(type, (typeof window !== 'undefined' ? localStorage.getItem('user_gender') : null) as Gender);
   return (
     <Section id="portrait">
-      <SectionHeader eyebrow="Section 02" title="Type Portrait" subtitle="A deeper look at who you are at your core." />
+      <SectionHeader eyebrow={`${t('report.body.section')} 02`} title={t('report.sections.portrait')} subtitle={t('report.body.portraitSubtitle')} />
       <div className="grid md:grid-cols-[1fr,200px] gap-8 items-start">
         <div className="space-y-4 text-foreground/85 leading-relaxed text-[15px] md:text-base">
           {data.introduction.map((p, i) => <p key={i}>{p}</p>)}
@@ -362,16 +959,22 @@ const PortraitSection = ({ data, type }: { data: PremiumTypeData; type: string }
 
 /* ===================== Section 3 — Cognitive Functions ===================== */
 
-const FUNCTION_LABELS = [
-  { key: 'dominant', label: 'Your Core Strength', rank: '#1 Dominant' },
-  { key: 'auxiliary', label: 'Your Support System', rank: '#2 Auxiliary' },
-  { key: 'tertiary', label: 'Developing with Age', rank: '#3 Tertiary' },
-  { key: 'inferior', label: 'Hidden Edge / Stress Trigger', rank: '#4 Inferior' },
-] as const;
+const useFunctionLabels = () => {
+  const { t } = useTranslation();
+  return [
+    { key: 'dominant', label: t('report.body.fnDominantLabel'), rank: t('report.body.fnDominantRank') },
+    { key: 'auxiliary', label: t('report.body.fnAuxiliaryLabel'), rank: t('report.body.fnAuxiliaryRank') },
+    { key: 'tertiary', label: t('report.body.fnTertiaryLabel'), rank: t('report.body.fnTertiaryRank') },
+    { key: 'inferior', label: t('report.body.fnInferiorLabel'), rank: t('report.body.fnInferiorRank') },
+  ] as const;
+};
 
-const CognitiveSection = ({ data }: { data: PremiumTypeData }) => (
+const CognitiveSection = ({ data }: { data: PremiumTypeData }) => {
+  const { t } = useTranslation();
+  const FUNCTION_LABELS = useFunctionLabels();
+  return (
   <Section id="cognitive">
-    <SectionHeader eyebrow="Section 03" title="How Your Mind Works" subtitle="Your four cognitive functions, ranked from dominant to inferior." />
+    <SectionHeader eyebrow={`${t('report.body.section')} 03`} title={t('report.sections.cognitive')} subtitle={t('report.body.cognitiveSubtitle')} />
     <div className="grid md:grid-cols-2 gap-4 md:gap-5">
       {FUNCTION_LABELS.map((f, i) => {
         const fn = data.cognitiveFunctions[f.key] as CognitiveFunction;
@@ -416,18 +1019,21 @@ const CognitiveSection = ({ data }: { data: PremiumTypeData }) => (
       </div>
     </div>
   </Section>
-);
+  );
+};
 
 /* ===================== Section 4 — Strengths & Weaknesses ===================== */
 
-const StrengthsSection = ({ data }: { data: PremiumTypeData }) => (
+const StrengthsSection = ({ data }: { data: PremiumTypeData }) => {
+  const { t } = useTranslation();
+  return (
   <Section id="strengths">
-    <SectionHeader eyebrow="Section 04" title="Strengths & Weaknesses" subtitle="The dual edges of your personality." />
+    <SectionHeader eyebrow={`${t('report.body.section')} 04`} title={t('report.body.strengthsTitle')} subtitle={t('report.body.strengthsSubtitle')} />
     <div className="grid md:grid-cols-2 gap-6">
       <div>
         <h3 className="font-bold text-foreground mb-4 flex items-center gap-2">
           <CheckCircle2 className="h-5 w-5 text-green-600" />
-          Your Strengths
+          {t('report.body.yourStrengths')}
         </h3>
         <div className="space-y-3">
           {data.strengths.map((s, i) => (
@@ -446,7 +1052,7 @@ const StrengthsSection = ({ data }: { data: PremiumTypeData }) => (
       <div>
         <h3 className="font-bold text-foreground mb-4 flex items-center gap-2">
           <AlertTriangle className="h-5 w-5 text-amber-600" />
-          Your Blind Spots
+          {t('report.body.yourBlindSpots')}
         </h3>
         <div className="space-y-3">
           {data.weaknesses.map((w, i) => (
@@ -467,48 +1073,57 @@ const StrengthsSection = ({ data }: { data: PremiumTypeData }) => (
       className="mt-8 p-5 rounded-xl text-center text-sm font-medium"
       style={{ background: 'color-mix(in srgb, var(--report-accent) 10%, transparent)', color: 'var(--report-accent)' }}
     >
-      Awareness of your blind spots is the first step to growth.
+      {t('report.body.blindSpotNote')}
     </div>
   </Section>
-);
+  );
+};
 
 /* ===================== Section 5 — Stress Profile ===================== */
 
 const clamp = (n: number, min: number, max: number) => Math.max(min, Math.min(max, n));
 
-const StressSection = ({ data, type, result }: {
-  data: PremiumTypeData; type: string; result: MbtiResult | null;
+const StressSection = ({ data, type, result, markerPositionOverride }: {
+  data: PremiumTypeData;
+  type: string;
+  result: MbtiResult | null;
+  markerPositionOverride?: number;
 }) => {
   const stressBaseline = stressBaselineByType[type] ?? 50;
-  // Dynamic — blend of typeData[code].stressBaseline and result.turbulentPercent.
-  // Falls back to the per-type baseline alone when turbulentPercent is unknown.
-  const markerPosition = clamp(
-    Math.round(
-      result?.turbulentPercent !== undefined
-        ? 0.4 * stressBaseline + 0.6 * result.turbulentPercent
-        : stressBaseline
-    ),
-    2,
-    98,
-  );
+  // When an override is provided (api path), use it directly; otherwise blend
+  // the per-type baseline with the persisted turbulentPercent (dev path).
+  const markerPosition =
+    markerPositionOverride !== undefined
+      ? clamp(Math.round(markerPositionOverride), 2, 98)
+      : clamp(
+          Math.round(
+            result?.turbulentPercent !== undefined
+              ? 0.4 * stressBaseline + 0.6 * result.turbulentPercent
+              : stressBaseline,
+          ),
+          2,
+          98,
+        );
 
+  const { t } = useTranslation();
   return (
     <Section id="stress">
-      <SectionHeader eyebrow="Section 05" title="Under Pressure" subtitle="How stress shows up — and how you recover." />
+      <SectionHeader eyebrow={`${t('report.body.section')} 05`} title={t('report.body.stressTitle')} subtitle={t('report.body.stressSubtitle')} />
       <div className="grid md:grid-cols-3 gap-5">
-        <StressCard title="Triggers" icon={Flame} items={data.stressTriggers} accent="var(--report-accent)" />
-        <StressCard title="Signs of Stress" icon={AlertTriangle} items={data.stressSigns} accent="hsl(30 90% 50%)" />
-        <StressCard title="Recovery" icon={Sunrise} items={data.recoveryStrategies} accent="hsl(160 60% 40%)" />
+        <StressCard title={t('report.body.triggers')} icon={Flame} items={data.stressTriggers} accent="var(--report-accent)" />
+        <StressCard title={t('report.body.signsOfStress')} icon={AlertTriangle} items={data.stressSigns} accent="hsl(30 90% 50%)" />
+        <StressCard title={t('report.body.recovery')} icon={Sunrise} items={data.recoveryStrategies} accent="hsl(160 60% 40%)" />
       </div>
 
       {/* Stress meter — marker position reflects user's A/T blend. */}
       <div className="mt-10 bg-card border border-border rounded-2xl p-6">
         <div className="flex items-center justify-between mb-3">
-          <h3 className="font-semibold text-foreground text-sm">Stress Tolerance</h3>
-          <span className="text-xs text-muted-foreground">Calm → Overwhelmed</span>
+          <h3 className="font-semibold text-foreground text-sm">{t('report.body.stressTolerance')}</h3>
+          <span className="text-xs text-muted-foreground">{t('report.body.calmOverwhelmed')}</span>
         </div>
         <div className="h-3 rounded-full bg-gradient-to-r from-green-400 via-amber-400 to-red-500 relative">
           <div
+            data-testid="stress-marker-dot"
             className="absolute top-1/2 w-4 h-4 rounded-full bg-white border-2 shadow-lg transition-all duration-700"
             style={{
               left: `${markerPosition}%`,
@@ -544,18 +1159,20 @@ const StressCard = ({ title, icon: Icon, items, accent }: {
 
 /* ===================== Section 6 — Relationships ===================== */
 
-const RelationshipsSection = ({ data }: { data: PremiumTypeData }) => (
+const RelationshipsSection = ({ data }: { data: PremiumTypeData }) => {
+  const { t } = useTranslation();
+  return (
   <Section id="relationships">
-    <SectionHeader eyebrow="Section 06" title="Relationships & Love" subtitle="How you love, what you offer, and what you need." />
+    <SectionHeader eyebrow={`${t('report.body.section')} 06`} title={t('report.body.relationshipsTitle')} subtitle={t('report.body.relationshipsSubtitle')} />
     <p className="text-foreground/85 leading-relaxed mb-8 text-[15px]">{data.relationships.narrative}</p>
 
     <div className="grid md:grid-cols-3 gap-4 mb-8">
-      <IconCard icon={Heart} title="What You Offer" items={data.relationships.offers} />
-      <IconCard icon={Target} title="What You Need" items={data.relationships.needs} />
-      <IconCard icon={AlertTriangle} title="Common Challenges" items={data.relationships.challenges} />
+      <IconCard icon={Heart} title={t('report.body.whatYouOffer')} items={data.relationships.offers} />
+      <IconCard icon={Target} title={t('report.body.whatYouNeed')} items={data.relationships.needs} />
+      <IconCard icon={AlertTriangle} title={t('report.body.commonChallenges')} items={data.relationships.challenges} />
     </div>
 
-    <h3 className="font-bold text-foreground mb-4">Compatible Types</h3>
+    <h3 className="font-bold text-foreground mb-4">{t('report.body.compatibleTypes')}</h3>
     <div className="flex flex-wrap gap-3">
       {data.relationships.compatibleWith.map((c) => (
         <div
@@ -573,7 +1190,8 @@ const RelationshipsSection = ({ data }: { data: PremiumTypeData }) => (
       ))}
     </div>
   </Section>
-);
+  );
+};
 
 const IconCard = ({ icon: Icon, title, items }: { icon: React.ElementType; title: string; items: string[] }) => (
   <div className="bg-card border border-border rounded-xl p-5">
@@ -592,37 +1210,54 @@ const IconCard = ({ icon: Icon, title, items }: { icon: React.ElementType; title
 
 /* ===================== Section 7 — Friendships ===================== */
 
-const FriendshipsSection = ({ data, type, result }: {
-  data: PremiumTypeData; type: string; result: MbtiResult | null;
+const FriendshipsSection = ({ data, type, result, socialBatteryOverride }: {
+  data: PremiumTypeData;
+  type: string;
+  result: MbtiResult | null;
+  socialBatteryOverride?: number;
 }) => {
   // Dynamic — blend of per-type social battery baseline and result.traits.EI.percent.
   // Per spec, EI.percent is 0-100 where higher = more extraverted (regardless of letter).
   // Falls back to the per-type baseline alone when EI percent is unknown.
   const batteryBaseline = socialBatteryByType[type] ?? data.socialBattery;
-  const extraversionPct = result?.traits?.EI?.percent;
+  const eiPercent = result?.traits?.EI?.percent;
+  const eiLetter = result?.traits?.EI?.letter;
+  // Convert dominance (50-100 of winning pole) → directional E-ness (0-100, higher = more extraverted)
+  const eDirectional =
+    eiPercent === undefined
+      ? undefined
+      : eiLetter === 'E'
+        ? eiPercent
+        : 100 - eiPercent;
 
-  const socialBattery = clamp(
-    Math.round(
-      extraversionPct === undefined
-        ? batteryBaseline
-        : 0.5 * batteryBaseline + 0.5 * extraversionPct
-    ),
-    0,
-    100,
-  );
+  // When an override is provided (api path), use it directly; otherwise blend
+  // the per-type baseline with the persisted EI directional percent (dev path).
+  const socialBattery =
+    socialBatteryOverride !== undefined
+      ? clamp(Math.round(socialBatteryOverride), 0, 100)
+      : clamp(
+          Math.round(
+            eDirectional === undefined
+              ? batteryBaseline
+              : 0.5 * batteryBaseline + 0.5 * eDirectional,
+          ),
+          0,
+          100,
+        );
 
+  const { t } = useTranslation();
   return (
     <Section id="friendships">
-      <SectionHeader eyebrow="Section 07" title="Friendships & Social Life" subtitle="The friend you are — and your social blind spots." />
+      <SectionHeader eyebrow={`${t('report.body.section')} 07`} title={t('report.body.friendshipsTitle')} subtitle={t('report.body.friendshipsSubtitle')} />
       <p className="text-foreground/85 leading-relaxed mb-8 text-[15px]">{data.friendships.narrative}</p>
 
       <div className="bg-card border border-border rounded-2xl p-6 mb-8">
         <div className="flex items-center justify-between mb-3">
           <div className="flex items-center gap-2">
             <Battery className="h-5 w-5" style={{ color: 'var(--report-accent)' }} />
-            <h3 className="font-semibold text-foreground">Social Battery</h3>
+            <h3 className="font-semibold text-foreground">{t('report.body.socialBattery')}</h3>
           </div>
-          <span className="text-2xl font-bold" style={{ color: 'var(--report-accent)' }}>{socialBattery}%</span>
+          <span data-testid="social-battery-percent" className="text-2xl font-bold" style={{ color: 'var(--report-accent)' }}>{socialBattery}%</span>
         </div>
         <div className="h-3 bg-muted rounded-full overflow-hidden">
           <div
@@ -636,7 +1271,7 @@ const FriendshipsSection = ({ data, type, result }: {
       <div className="bg-card border border-border rounded-2xl p-6">
         <h4 className="font-bold text-foreground mb-4 flex items-center gap-2">
           <CheckCircle2 className="h-5 w-5 text-green-600" />
-          You're the friend who...
+          {t('report.body.friendWho')}
         </h4>
         <ul className="space-y-3">
           {data.friendships.positives.map((p, i) => (
@@ -650,7 +1285,7 @@ const FriendshipsSection = ({ data, type, result }: {
       <div className="bg-card border border-border rounded-2xl p-6">
         <h4 className="font-bold text-foreground mb-4 flex items-center gap-2">
           <AlertTriangle className="h-5 w-5 text-amber-600" />
-          Watch out for...
+          {t('report.body.watchOutFor')}
         </h4>
         <ul className="space-y-3">
           {data.friendships.watchOuts.map((p, i) => (
@@ -673,12 +1308,14 @@ const ICON_MAP: Record<string, React.ElementType> = {
   'bar-chart': BarChart, building: Building, 'graduation-cap': GraduationCap, truck: Truck,
 };
 
-const CareerSection = ({ data }: { data: PremiumTypeData }) => (
+const CareerSection = ({ data }: { data: PremiumTypeData }) => {
+  const { t } = useTranslation();
+  return (
   <Section id="career">
-    <SectionHeader eyebrow="Section 08" title="Career Paths" subtitle="Where your strengths shine — and where to be careful." />
+    <SectionHeader eyebrow={`${t('report.body.section')} 08`} title={t('report.body.careerTitle')} subtitle={t('report.body.careerSubtitle')} />
     <p className="text-foreground/85 leading-relaxed mb-8 text-[15px]">{data.career.narrative}</p>
 
-    <h3 className="font-bold text-foreground mb-4">Best-Fit Careers</h3>
+    <h3 className="font-bold text-foreground mb-4">{t('report.body.bestFitCareers')}</h3>
     <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-10">
       {data.career.bestCareers.map((c) => {
         const Icon = ICON_MAP[c.icon] ?? Briefcase;
@@ -692,14 +1329,14 @@ const CareerSection = ({ data }: { data: PremiumTypeData }) => (
     </div>
 
     <div className="grid md:grid-cols-2 gap-5">
-      <IconCard icon={Compass} title="Leadership Style" items={data.career.leadershipStyle} />
-      <IconCard icon={Users} title="As a Teammate" items={data.career.asTeammate} />
+      <IconCard icon={Compass} title={t('report.body.leadershipStyle')} items={data.career.leadershipStyle} />
+      <IconCard icon={Users} title={t('report.body.asTeammate')} items={data.career.asTeammate} />
     </div>
 
     <div className="mt-6 p-5 rounded-xl border border-amber-300 bg-amber-50 dark:bg-amber-950/30">
       <h4 className="font-bold text-foreground mb-2 flex items-center gap-2">
         <AlertTriangle className="h-4 w-4 text-amber-600" />
-        Approach with Caution
+        {t('report.body.approachWithCaution')}
       </h4>
       <ul className="space-y-1">
         {data.career.cautionCareers.map((c, i) => (
@@ -708,13 +1345,16 @@ const CareerSection = ({ data }: { data: PremiumTypeData }) => (
       </ul>
     </div>
   </Section>
-);
+  );
+};
 
 /* ===================== Section 9 — Growth Roadmap ===================== */
 
-const GrowthSection = ({ data }: { data: PremiumTypeData }) => (
+const GrowthSection = ({ data }: { data: PremiumTypeData }) => {
+  const { t } = useTranslation();
+  return (
   <Section id="growth">
-    <SectionHeader eyebrow="Section 09" title="Personal Growth Roadmap" subtitle="How your type evolves across a lifetime." />
+    <SectionHeader eyebrow={`${t('report.body.section')} 09`} title={t('report.body.growthTitle')} subtitle={t('report.body.growthSubtitle')} />
     <div className="grid md:grid-cols-2 gap-5 mb-8">
       {data.growthRoadmap.map((g, i) => (
         <div key={i} className="bg-card border border-border rounded-2xl p-6">
@@ -738,7 +1378,7 @@ const GrowthSection = ({ data }: { data: PremiumTypeData }) => (
     >
       <div className="flex items-center gap-2 mb-4">
         <Lightbulb className="h-5 w-5" />
-        <h3 className="font-bold">Top 3 Growth Challenges</h3>
+        <h3 className="font-bold">{t('report.body.topGrowthChallenges')}</h3>
       </div>
       <ul className="space-y-3">
         {data.topGrowthChallenges.map((c, i) => (
@@ -750,27 +1390,52 @@ const GrowthSection = ({ data }: { data: PremiumTypeData }) => (
       </ul>
     </div>
   </Section>
-);
+  );
+};
 
 /* ===================== Section 10 — Famous People ===================== */
 
 const colors = ['#6366f1', '#ec4899', '#f59e0b', '#10b981', '#3b82f6', '#8b5cf6', '#ef4444', '#14b8a6'];
 
-const FamousSection = ({ data }: { data: PremiumTypeData }) => (
+const FamousSection = ({ data }: { data: PremiumTypeData }) => {
+  const { t } = useTranslation();
+  const locale = useLocale();
+  // famousAvatars.ts is keyed by English names. The JA dataset replaces those
+  // with katakana/kanji, so direct lookups miss. Pull the EN dataset for the
+  // same type and pair entries by index — the EN/JA famousPeople arrays are
+  // kept in lockstep — so we can use the English name as the avatar key.
+  const enFamous = useMemo(
+    () => (locale === 'ja' ? getPremiumTypeDataLocalized(data.code, 'en').famousPeople : null),
+    [locale, data.code],
+  );
+  return (
   <Section id="famous">
-    <SectionHeader eyebrow="Section 10" title="Famous People & Characters" subtitle={`Notable ${data.code}s in history and fiction.`} />
+    <SectionHeader eyebrow={`${t('report.body.section')} 10`} title={t('report.body.famousTitle')} subtitle={t('report.body.famousSubtitle', { type: data.code })} />
     <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
       {data.famousPeople.map((p, i) => {
         const initials = p.name.split(' ').map(n => n[0]).slice(0, 2).join('');
+        const avatar = getFamousAvatar(enFamous?.[i]?.name ?? p.name);
         return (
           <div key={i} className="bg-card border border-border rounded-xl p-5 hover:shadow-md transition-shadow">
             <div className="flex items-start gap-3 mb-3">
-              <div
-                className="w-12 h-12 rounded-full flex items-center justify-center text-white font-bold shrink-0"
-                style={{ background: colors[i % colors.length] }}
-              >
-                {initials}
-              </div>
+              {avatar ? (
+                <img
+                  src={avatar}
+                  alt={p.name}
+                  loading="lazy"
+                  width={56}
+                  height={56}
+                  className="w-14 h-14 rounded-full object-cover bg-muted shrink-0 ring-2"
+                  style={{ boxShadow: `0 0 0 2px ${colors[i % colors.length]}` }}
+                />
+              ) : (
+                <div
+                  className="w-14 h-14 rounded-full flex items-center justify-center text-white font-bold shrink-0"
+                  style={{ background: colors[i % colors.length] }}
+                >
+                  {initials}
+                </div>
+              )}
               <div>
                 <h4 className="font-semibold text-foreground leading-tight">{p.name}</h4>
                 <p className="text-xs text-muted-foreground mt-0.5">{p.role}</p>
@@ -782,21 +1447,25 @@ const FamousSection = ({ data }: { data: PremiumTypeData }) => (
       })}
     </div>
   </Section>
-);
+  );
+};
+
 
 /* ===================== Section 11 — Comparisons ===================== */
 
-const ComparisonsSection = ({ data }: { data: PremiumTypeData }) => (
+const ComparisonsSection = ({ data }: { data: PremiumTypeData }) => {
+  const { t } = useTranslation();
+  return (
   <Section id="comparisons">
-    <SectionHeader eyebrow="Section 11" title="Type Comparisons" subtitle="The two types most often confused with yours." />
+    <SectionHeader eyebrow={`${t('report.body.section')} 11`} title={t('report.body.section11Title')} subtitle={t('report.body.section11Subtitle')} />
     <div className="grid md:grid-cols-2 gap-5">
       {data.typeComparisons.map((c) => (
         <div key={c.vsType} className="bg-card border border-border rounded-2xl p-6">
-          <p className="text-xs uppercase tracking-wider text-muted-foreground mb-1">{data.code} vs</p>
+          <p className="text-xs uppercase tracking-wider text-muted-foreground mb-1">{data.code} {t('report.body.vs')}</p>
           <h3 className="text-2xl font-bold mb-5" style={{ color: 'var(--report-accent)' }}>{c.vsType}</h3>
 
           <div className="mb-5">
-            <p className="text-xs font-semibold uppercase text-muted-foreground mb-2">Shared Traits</p>
+            <p className="text-xs font-semibold uppercase text-muted-foreground mb-2">{t('report.body.sharedTraits')}</p>
             <ul className="space-y-1.5">
               {c.sharedTraits.map((s, i) => (
                 <li key={i} className="text-sm text-foreground/80 flex gap-2">
@@ -808,7 +1477,7 @@ const ComparisonsSection = ({ data }: { data: PremiumTypeData }) => (
           </div>
 
           <div className="mb-5">
-            <p className="text-xs font-semibold uppercase text-muted-foreground mb-2">Key Differences</p>
+            <p className="text-xs font-semibold uppercase text-muted-foreground mb-2">{t('report.body.keyDifferences')}</p>
             <ul className="space-y-1.5">
               {c.keyDifferences.map((d, i) => (
                 <li key={i} className="text-sm text-foreground/80 flex gap-2">
@@ -820,20 +1489,19 @@ const ComparisonsSection = ({ data }: { data: PremiumTypeData }) => (
           </div>
 
           <div className="p-3 rounded-lg bg-muted text-sm text-foreground/85">
-            <span className="font-semibold">You might be {c.vsType} if: </span>{c.youMightBeThis}
+            <span className="font-semibold">{t('report.body.youMightBe', { type: c.vsType })} </span>{c.youMightBeThis}
           </div>
         </div>
       ))}
     </div>
-    <p className="mt-6 text-center text-sm text-muted-foreground italic">
-      Not sure your type fits? Consider retaking the test.
-    </p>
   </Section>
-);
+  );
+};
 
 /* ===================== Section 12 — Summary (Editorial Poster) ===================== */
 
 const SummarySection = ({ data, type }: { data: PremiumTypeData; type: string }) => {
+  const { t } = useTranslation();
   const avatar = getAvatarForType(type, (typeof window !== 'undefined' ? localStorage.getItem('user_gender') : null) as Gender);
   const signature = data.strengths[0]?.title ?? '—';
   const growthEdge = data.weaknesses[0]?.title ?? '—';
@@ -844,147 +1512,96 @@ const SummarySection = ({ data, type }: { data: PremiumTypeData; type: string })
   return (
     <Section id="summary">
       <div
-        className="relative overflow-hidden rounded-3xl shadow-elevated"
+        className="relative overflow-hidden rounded-3xl shadow-elevated p-8 md:p-12 lg:p-14"
         style={{
-          background: `linear-gradient(145deg,
-            color-mix(in srgb, var(--report-accent) 84%, hsl(var(--foreground))) 0%,
-            color-mix(in srgb, var(--report-accent) 68%, hsl(var(--background))) 58%,
-            color-mix(in srgb, var(--report-accent) 76%, hsl(var(--foreground))) 100%)`,
+          background: `linear-gradient(160deg,
+            color-mix(in srgb, var(--report-accent) 90%, hsl(var(--foreground))) 0%,
+            color-mix(in srgb, var(--report-accent) 78%, hsl(var(--background))) 100%)`,
         }}
       >
-        <div
-          aria-hidden
-          className="absolute inset-0 pointer-events-none"
-          style={{
-            background: 'linear-gradient(180deg, hsl(var(--background) / 0.02), hsl(var(--foreground) / 0.16))',
-          }}
-        />
+        {/* Eyebrow */}
+        <p className="text-[11px] md:text-xs font-semibold tracking-[0.32em] uppercase text-primary-foreground/70 mb-8">
+          {t('report.body.finalSnapshot')}
+        </p>
 
-        <div className="relative grid gap-8 lg:grid-cols-[1.15fr,0.85fr] p-6 md:p-10 lg:p-12">
-          <div className="min-w-0">
-            <div className="flex items-center justify-between gap-4 mb-6 text-[10px] md:text-[11px] font-semibold tracking-[0.28em] uppercase text-primary-foreground/75">
-              <span>Section 12</span>
-              <span>Final Snapshot</span>
-            </div>
-
-            <div className="inline-flex items-center rounded-full border px-4 py-2 mb-5 text-sm md:text-base font-extrabold tracking-[0.35em] text-primary-foreground"
-              style={{
-                borderColor: 'hsl(var(--primary-foreground) / 0.22)',
-                background: 'hsl(var(--primary-foreground) / 0.08)',
-              }}
-            >
-              {type}
-            </div>
-
-            <h2 className="text-4xl md:text-6xl lg:text-7xl font-extrabold leading-none text-primary-foreground text-balance">
-              {data.name}
-            </h2>
-            <p className="mt-4 max-w-2xl text-base md:text-lg leading-relaxed text-primary-foreground/85">
-              {data.tagline}
-            </p>
-
-            <div className="mt-8 grid gap-3 sm:grid-cols-2">
-              {[
-                { label: 'Signature Trait', value: signature },
-                { label: 'Growth Edge', value: growthEdge },
-                { label: 'Best With', value: bestWith },
-                { label: 'Power Move', value: powerMove },
-              ].map((item) => (
-                <div
-                  key={item.label}
-                  className="rounded-2xl border p-4 md:p-5"
-                  style={{
-                    borderColor: 'hsl(var(--primary-foreground) / 0.14)',
-                    background: 'hsl(var(--primary-foreground) / 0.08)',
-                  }}
-                >
-                  <div className="text-[10px] md:text-[11px] font-semibold tracking-[0.22em] uppercase text-primary-foreground/65">
-                    {item.label}
-                  </div>
-                  <div className="mt-2 text-base md:text-lg font-bold leading-tight text-primary-foreground">
-                    {item.value}
-                  </div>
-                </div>
-              ))}
-            </div>
-
-            {mantra && (
-              <div
-                className="mt-6 rounded-2xl border p-5 md:p-6"
-                style={{
-                  borderColor: 'hsl(var(--primary-foreground) / 0.14)',
-                  background: 'hsl(var(--foreground) / 0.18)',
-                }}
-              >
-                <div className="flex items-center gap-2 text-[10px] md:text-[11px] font-semibold tracking-[0.22em] uppercase text-primary-foreground/70">
-                  <Sparkles className="h-3.5 w-3.5" />
-                  Your Mantra
-                </div>
-                <p className="mt-3 text-lg md:text-2xl italic leading-relaxed text-primary-foreground text-balance">
-                  “{mantra}”
-                </p>
-              </div>
-            )}
-
-            <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:items-center no-print">
-              <Button
-                size="lg"
-                onClick={() => window.print()}
-                className="w-full sm:w-auto font-bold"
-                style={{
-                  background: 'hsl(var(--primary-foreground))',
-                  color: 'hsl(var(--foreground))',
-                }}
-              >
-                <Printer className="h-4 w-4 mr-2" />
-                Download Poster + Report
-              </Button>
-              <p className="text-xs md:text-sm text-primary-foreground/70">Save as PDF for future reference</p>
-            </div>
-          </div>
-
-          <div className="flex items-stretch">
+        {/* Avatar + Type Portrait header */}
+        <div className="flex flex-col sm:flex-row sm:items-center gap-6 md:gap-8 mb-10">
+          {avatar ? (
+            <img
+              src={avatar}
+              alt={data.name}
+              className="w-28 h-28 md:w-36 md:h-36 rounded-full object-cover flex-shrink-0 border-4"
+              style={{ borderColor: 'hsl(var(--primary-foreground) / 0.25)' }}
+              loading="lazy"
+            />
+          ) : (
             <div
-              className="w-full rounded-[28px] border p-4 md:p-5"
-              style={{
-                borderColor: 'hsl(var(--primary-foreground) / 0.16)',
-                background: 'linear-gradient(180deg, hsl(var(--primary-foreground) / 0.12), hsl(var(--foreground) / 0.18))',
-              }}
+              className="w-28 h-28 md:w-36 md:h-36 rounded-full flex-shrink-0 flex items-center justify-center text-xs text-primary-foreground/60"
+              style={{ background: 'hsl(var(--primary-foreground) / 0.12)' }}
             >
-              <div className="flex items-center justify-between gap-3 mb-4 text-[10px] font-semibold tracking-[0.22em] uppercase text-primary-foreground/65">
-                <span>Type Portrait</span>
-                <span>{type}</span>
-              </div>
-
-              <div
-                className="relative overflow-hidden rounded-2xl"
-                style={{ background: 'linear-gradient(180deg, hsl(var(--background) / 0.88), hsl(var(--muted) / 0.94))' }}
-              >
-                {avatar ? (
-                  <img
-                    src={avatar}
-                    alt={data.name}
-                    className="w-full aspect-[4/5] object-contain p-4 md:p-6"
-                    loading="lazy"
-                  />
-                ) : (
-                  <div className="flex aspect-[4/5] items-center justify-center text-sm text-muted-foreground">
-                    Portrait unavailable
-                  </div>
-                )}
-              </div>
-
-              <div className="mt-4 rounded-2xl p-4"
-                style={{ background: 'hsl(var(--primary-foreground) / 0.08)' }}
-              >
-                <p className="text-[10px] font-semibold tracking-[0.22em] uppercase text-primary-foreground/65">Closing Note</p>
-                <p className="mt-2 text-sm md:text-base leading-relaxed text-primary-foreground/84">
-                  Your personality is a compass, not a cage. Keep what resonates, question what does not, and use this report to move with more self-awareness.
-                </p>
-              </div>
+              {t('report.body.noPortrait')}
             </div>
+          )}
+
+          <div className="min-w-0">
+            <p className="text-[11px] md:text-xs font-semibold tracking-[0.28em] uppercase text-primary-foreground/65 mb-2">
+              {t('report.body.typePortrait')}
+            </p>
+            <h2 className="text-3xl md:text-5xl font-extrabold leading-tight text-primary-foreground">
+              {type} — {data.name}
+            </h2>
+            {data.tagline && (
+              <p className="mt-3 text-sm md:text-base italic text-primary-foreground/80">
+                "{data.tagline}"
+              </p>
+            )}
           </div>
         </div>
+
+        {/* Closing Note */}
+        <div className="mb-8">
+          <p className="text-[11px] md:text-xs font-semibold tracking-[0.28em] uppercase text-primary-foreground/65 mb-3">
+            {t('report.body.closingNote')}
+          </p>
+          <p className="text-sm md:text-base leading-relaxed text-primary-foreground/90 max-w-3xl">
+            {t('report.body.closingBody', { type })}
+          </p>
+        </div>
+
+        {/* Mantra card */}
+        {mantra && (
+          <div
+            className="rounded-2xl border-2 p-6 md:p-8"
+            style={{ borderColor: 'hsl(var(--primary-foreground) / 0.35)' }}
+          >
+            <p className="text-[11px] md:text-xs font-semibold tracking-[0.28em] uppercase text-primary-foreground/70 mb-4">
+              {t('report.body.yourMantra')}
+            </p>
+            <p className="text-xl md:text-2xl italic font-semibold leading-relaxed text-primary-foreground text-balance">
+              "{mantra}"
+            </p>
+          </div>
+        )}
+
+        {/* CTA */}
+        <div className="mt-8 flex flex-col gap-2 no-print">
+          <Button
+            size="lg"
+            onClick={handleSavePdf}
+            className="w-full sm:w-auto font-bold"
+            style={{
+              background: 'hsl(var(--primary-foreground))',
+              color: 'hsl(var(--foreground))',
+            }}
+          >
+            <Download className="h-4 w-4 mr-2" />
+            {t('report.body.savePdf')}
+          </Button>
+          <p className="text-xs md:text-sm text-primary-foreground/70 text-center">{t('report.body.savePdfNote')}</p>
+        </div>
+
+        {/* Hidden helper data to keep variables used */}
+        <span className="sr-only">{signature} {growthEdge} {bestWith} {powerMove}</span>
       </div>
     </Section>
   );

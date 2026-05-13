@@ -36,13 +36,25 @@ export function useLocalizedNavigate() {
         return;
       }
       if (typeof to === 'string') {
-        navigate(withLocalePrefix(to, locale), options);
+        // Forward `options` only when explicitly provided so the inner
+        // `navigate(path)` invocation (no second arg) matches react-router's
+        // 1-argument signature — keeps spies/mocks asserting on a single
+        // `navigate('/x')` call working as before.
+        if (options === undefined) {
+          navigate(withLocalePrefix(to, locale));
+        } else {
+          navigate(withLocalePrefix(to, locale), options);
+        }
         return;
       }
       // Path object
       const next = { ...to };
       if (next.pathname) next.pathname = withLocalePrefix(next.pathname, locale);
-      navigate(next, options);
+      if (options === undefined) {
+        navigate(next);
+      } else {
+        navigate(next, options);
+      }
     },
     [navigate, locale],
   );

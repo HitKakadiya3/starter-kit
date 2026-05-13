@@ -1,0 +1,1129 @@
+{
+  "info": {
+    "_postman_id": "9f4120c3-3cff-46fd-9dbe-4e4d0802326c",
+    "name": "Frontend API List",
+    "description": "**Description**\n\nThis collection contains all APIs used exclusively by the **frontend website** to manage the complete user journey—from quiz initiation to payment processing, result generation, and final report delivery.\n\nIt is designed to support the full flow of the application, including:\n\n- Fetching and submitting quiz questions\n    \n- Processing quiz results and insights\n    \n- Handling multiple payment gateways (Stripe, PayPal, Solidgate)\n    \n- Managing cross-sell and subscription flows\n    \n- Capturing customer details for reports and certificates\n    \n- Generating and retrieving final reports and certificates\n    \n- Displaying pricing and promotional data\n    \n\n---\n\n### **Purpose**\n\nThe APIs in this collection are intended **only for frontend integration** and should be used to:\n\n- Drive UI/UX flows\n    \n- Manage user interactions\n    \n- Control navigation using `redirect_page` responses\n    \n- Integrate payment workflows seamlessly\n    \n\n---\n\n### **Key Features Covered**\n\n- Quiz flow management (questions, submission, results)\n    \n- Multi-gateway payment handling (Stripe, PayPal, Solidgate)\n    \n- Cross-sell and subscription logic\n    \n- Customer data collection\n    \n- Report & certificate generation\n    \n- Dynamic pricing display\n    \n- Promo code and access handling\n    \n\n---\n\n### **Important Notes**\n\n- All APIs require proper headers such as `x-host`, `ip_address`, and `Authorization`.\n    \n- Many APIs return a `redirect_page` key, which the frontend must use to determine the next step in the user journey.\n    \n- Some APIs are **optional** (e.g., cross-sale), depending on user actions.\n    \n- Ensure consistent use of `quiz_result_id` (encrypted or raw as required per API).\n    \n- This collection is **not intended for admin or backend use**.\n    \n\n---\n\n### **Usage Scope**\n\nThis collection should be used by:\n\n- Frontend developers\n    \n- UI/UX flow integration\n    \n- Payment and checkout implementation\n    \n- Report and certificate rendering\n    \n\n---\n\n### **Summary**\n\nThe **Frontend API List** acts as the central integration layer between the frontend application and backend services, enabling a complete, structured, and scalable user experience from quiz start to final report delivery.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "_exporter_id": "52229972",
+    "_collection_link": "https://go.postman.co/collection/52229972-9f4120c3-3cff-46fd-9dbe-4e4d0802326c?source=collection_link"
+  },
+  "item": [
+    {
+      "name": "Questions",
+      "item": [
+        {
+          "name": "Get Questions",
+          "protocolProfileBehavior": {
+            "disableBodyPruning": true
+          },
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{SECRET_KEY}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-host",
+                "value": "{{x-host}}"
+              },
+              {
+                "key": "ip_address",
+                "value": "110.225.253.245"
+              },
+              {
+                "key": "User-Agent",
+                "value": "",
+                "type": "text",
+                "disabled": true
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "",
+              "options": {
+                "raw": {
+                  "language": "text"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{BASE_URL}}questions?variant_type=variation&tag",
+              "host": [
+                "{{BASE_URL}}questions"
+              ],
+              "query": [
+                {
+                  "key": "variant_type",
+                  "value": "variation",
+                  "description": "optional"
+                },
+                {
+                  "key": "tag",
+                  "value": null,
+                  "description": "tag name is optional. use for order by questions"
+                }
+              ]
+            },
+            "description": "### API Name : Get Questions\n\n**Endpoint:**  \n`GET /api/v1/questions`\n\n**Base URL:**  \n`http://localhost:3003`\n\n---\n\n### **Description**\n\nThis API retrieves questions from the system. It supports optional filtering by `variant_type` and optional ordering using a `tag`. The response contains a list of questions based on the provided query parameters.\n\n---\n\n### **Headers**\n\n| Key | Required | Description |\n| --- | --- | --- |\n| x-host | Yes | Host identifier (e.g., `iqpro.ai`) |\n| ip_address | Yes | Client IP address |\n| Authorization | Yes | Bearer token or API authorization key |\n\n---\n\n### **Query Parameters**\n\n| Parameter | Required | Description |\n| --- | --- | --- |\n| variant_type | No | Filter questions by variant type (e.g., `variation`) |\n| tag | No | Tag used to influence ordering of questions (can be `null`) |\n\n---\n\n### **Request Example**\n\n```\nGET /api/v1/questions?variant_type=variation&tag=null\n\n ```\n\n---\n\n### **Response**\n\n**Success (200)**  \nReturns a list of questions:\n\n``` json\n{\n  \"data\": [\n    {\n      \"id\": 1,\n      \"question\": \"Sample question\",\n      \"options\": [],\n      \"answer\": \"string\"\n    }\n  ]\n}\n\n ```\n\n---\n\n### **Error Responses**\n\n- `400 Bad Request` – Invalid query parameters\n    \n- `401 Unauthorized` – Invalid or missing authorization\n    \n- `500 Internal Server Error` – Server-side issue\n    \n\n---\n\n### **Notes**\n\n- `variant_type` and `tag` are optional parameters.\n    \n- If `tag` is `null`, default ordering may be applied.\n    \n- Ensure required headers are passed correctly.\n    \n- Uses environment variables like `{{BASE_URL}}` and `{{x-host}}` in Postman setup."
+          },
+          "response": [
+            {
+              "name": "question",
+              "originalRequest": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "x-host",
+                    "value": "16persons.com",
+                    "type": "text"
+                  },
+                  {
+                    "key": "ip",
+                    "value": "",
+                    "type": "text"
+                  },
+                  {
+                    "key": "User-Agent",
+                    "value": "",
+                    "type": "text"
+                  }
+                ],
+                "url": {
+                  "raw": "{{BASE_URL}}questions",
+                  "host": [
+                    "{{BASE_URL}}questions"
+                  ]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "X-Powered-By",
+                  "value": "Express"
+                },
+                {
+                  "key": "Access-Control-Allow-Origin",
+                  "value": "*"
+                },
+                {
+                  "key": "Access-Control-Allow-Methods",
+                  "value": "GET, POST, PUT, DELETE, OPTIONS, PATCH"
+                },
+                {
+                  "key": "Access-Control-Allow-Headers",
+                  "value": "Content-Type, Authorization, X-Api-Key, X-Amz-Date, X-Amz-Security-Token, X-Amz-User-Agent, X-Amzn-Trace-Id, access-control-allow-origin"
+                },
+                {
+                  "key": "Access-Control-Allow-Credentials",
+                  "value": "true"
+                },
+                {
+                  "key": "Content-Type",
+                  "value": "application/json",
+                  "description": "",
+                  "type": "text"
+                },
+                {
+                  "key": "Content-Length",
+                  "value": "2725"
+                },
+                {
+                  "key": "ETag",
+                  "value": "W/\"aa5-ljfBNtnEVqcgn5Bnlqp3Ev50ZEs\""
+                },
+                {
+                  "key": "Date",
+                  "value": "Tue, 17 Feb 2026 06:27:15 GMT"
+                },
+                {
+                  "key": "Connection",
+                  "value": "keep-alive"
+                },
+                {
+                  "key": "Keep-Alive",
+                  "value": "timeout=5"
+                }
+              ],
+              "cookie": [
+                {
+                  "expires": "Invalid Date",
+                  "domain": "",
+                  "path": ""
+                }
+              ],
+              "body": "{\n    \"meta\": {\n        \"message\": \"Question fetched\",\n        \"success\": true,\n        \"status\": 200\n    },\n    \"data\": {\n        \"questions\": [\n            {\n                \"id\": \"15\",\n                \"question_type_id\": 3,\n                \"text\": \"Which shape is missing?\",\n                \"image_url\": \"https://wwiqtest.com/wp-content/uploads/2020/12/Q27_main.svg\",\n                \"options\": [\n                    {\n                        \"id\": \"6\",\n                        \"image_url\": \"https://wwiqtest.com/wp-content/uploads/2020/12/22-a.png\"\n                    },\n                    {\n                        \"id\": \"7\",\n                        \"image_url\": \"https://wwiqtest.com/wp-content/uploads/2020/12/22-b.png\"\n                    },\n                    {\n                        \"id\": \"8\",\n                        \"image_url\": \"https://wwiqtest.com/wp-content/uploads/2020/12/22-c.png\"\n                    },\n                    {\n                        \"id\": \"9\",\n                        \"image_url\": \"https://wwiqtest.com/wp-content/uploads/2020/12/22-d.png\"\n                    },\n                    {\n                        \"id\": \"10\",\n                        \"image_url\": \"https://wwiqtest.com/wp-content/uploads/2020/12/22-f.png\"\n                    }\n                ]\n            },\n            {\n                \"id\": \"24\",\n                \"question_type_id\": 6,\n                \"text\": \"I panic easily.\",\n                \"image_url\": null,\n                \"options\": [\n                    {\n                        \"id\": \"41\",\n                        \"rating_left_label\": \"Not At All Like Me\",\n                        \"rating_right_label\": \"Very Much Like Me\"\n                    }\n                ]\n            },\n            {\n                \"id\": \"18\",\n                \"question_type_id\": 6,\n                \"text\": \"question 1 test\",\n                \"image_url\": \"https://wwiqtest.com/wp-content/uploads/2020/12/Q27_main.svg\",\n                \"options\": [\n                    {\n                        \"id\": \"11\",\n                        \"text\": \"question 1 test en\",\n                        \"weight\": 5\n                    },\n                    {\n                        \"id\": \"12\",\n                        \"text\": \"question 1 test en\"\n                    },\n                    {\n                        \"id\": \"13\",\n                        \"text\": \"question 1 test en\"\n                    }\n                ]\n            },\n            {\n                \"id\": \"21\",\n                \"question_type_id\": 6,\n                \"text\": \"I feel more comfortable working in a team than alone.\",\n                \"image_url\": null,\n                \"options\": [\n                    {\n                        \"id\": \"26\",\n                        \"text\": \"Strongly Disagree\",\n                        \"weight\": 1\n                    },\n                    {\n                        \"id\": \"27\",\n                        \"text\": \"Disagree\",\n                        \"weight\": 1\n                    },\n                    {\n                        \"id\": \"28\",\n                        \"text\": \"Neutral\",\n                        \"weight\": 1\n                    },\n                    {\n                        \"id\": \"29\",\n                        \"text\": \"Agree\",\n                        \"weight\": 1\n                    },\n                    {\n                        \"id\": \"30\",\n                        \"text\": \"Strongly Agree\",\n                        \"weight\": 1\n                    }\n                ]\n            },\n            {\n                \"id\": \"27\",\n                \"question_type_id\": 6,\n                \"text\": \"I panic easily.\",\n                \"image_url\": null,\n                \"options\": [\n                    {\n                        \"id\": \"44\",\n                        \"rating_left_label\": \"Not At All Like Me\",\n                        \"rating_right_label\": \"Very Much Like Me\"\n                    }\n                ]\n            },\n            {\n                \"id\": \"30\",\n                \"question_type_id\": 6,\n                \"text\": \"I panic easily.1\",\n                \"image_url\": null,\n                \"options\": [\n                    {\n                        \"id\": \"47\",\n                        \"rating_left_label\": \"Not At All Like Me\",\n                        \"rating_right_label\": \"Very Much Like Me\"\n                    }\n                ]\n            },\n            {\n                \"id\": \"33\",\n                \"question_type_id\": 6,\n                \"text\": \"I panic easily.2\",\n                \"image_url\": null,\n                \"options\": [\n                    {\n                        \"id\": \"50\",\n                        \"rating_left_label\": \"Not At All Like Me\",\n                        \"rating_right_label\": \"Very Much Like Me\"\n                    }\n                ]\n            },\n            {\n                \"id\": \"36\",\n                \"question_type_id\": 6,\n                \"text\": \"I panic easily.2\",\n                \"image_url\": null,\n                \"options\": [\n                    {\n                        \"id\": \"53\",\n                        \"rating_left_label\": \"Not At All Like Me\",\n                        \"rating_right_label\": \"Very Much Like Me\"\n                    }\n                ]\n            },\n            {\n                \"id\": \"39\",\n                \"question_type_id\": 6,\n                \"text\": \"I panic easily.3\",\n                \"image_url\": null,\n                \"options\": [\n                    {\n                        \"id\": \"56\",\n                        \"rating_left_label\": \"Not At All Like Me\",\n                        \"rating_right_label\": \"Very Much Like Me\"\n                    }\n                ]\n            },\n            {\n                \"id\": \"42\",\n                \"question_type_id\": 6,\n                \"text\": \"I panic easily.4\",\n                \"image_url\": null,\n                \"options\": [\n                    {\n                        \"id\": \"59\",\n                        \"rating_left_label\": \"Not At All Like Me\",\n                        \"rating_right_label\": \"Very Much Like Me\"\n                    }\n                ]\n            },\n            {\n                \"id\": \"45\",\n                \"question_type_id\": 6,\n                \"text\": \"I panic easily.4\",\n                \"image_url\": null,\n                \"options\": [\n                    {\n                        \"id\": \"62\",\n                        \"rating_left_label\": \"Not At All Like Me\",\n                        \"rating_right_label\": \"Very Much Like Me\"\n                    }\n                ]\n            }\n        ]\n    }\n}"
+            }
+          ]
+        },
+        {
+          "name": "Submit Question",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{SECRET_KEY}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "x-host",
+                "value": "{{x-host}}",
+                "description": "Host identifier required by the API gateway or upstream routing layer."
+              },
+              {
+                "key": "ip_address",
+                "value": "122.170.99.65",
+                "description": "Client IP address submitted with the request for attribution, analytics, or validation purposes."
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n    \"email\": \"harshadp+1776765258412@itpathsolutions.com\",\r\n    \"quiz_data\": [\r\n        {\r\n            \"id\": \"2\",\r\n            \"answer\": 1\r\n        },\r\n        {\r\n            \"id\": \"5\",\r\n            \"answer\": 3\r\n        },\r\n        {\r\n            \"id\": \"8\",\r\n            \"answer\": 4\r\n        },\r\n        {\r\n            \"id\": \"11\",\r\n            \"answer\": 5\r\n        },\r\n        {\r\n            \"id\": \"14\",\r\n            \"answer\": 1\r\n        },\r\n        {\r\n            \"id\": \"17\",\r\n            \"answer\": 1\r\n        },\r\n        {\r\n            \"id\": \"20\",\r\n            \"answer\": 5\r\n        },\r\n        {\r\n            \"id\": \"23\",\r\n            \"answer\": 2\r\n        },\r\n        {\r\n            \"id\": \"26\",\r\n            \"answer\": 3\r\n        },\r\n        {\r\n            \"id\": \"29\",\r\n            \"answer\": 1\r\n        },\r\n        {\r\n            \"id\": \"32\",\r\n            \"answer\": 1\r\n        },\r\n        {\r\n            \"id\": \"35\",\r\n            \"answer\": 5\r\n        },\r\n        {\r\n            \"id\": \"38\",\r\n            \"answer\": 4\r\n        },\r\n        {\r\n            \"id\": \"41\",\r\n            \"answer\": 4\r\n        },\r\n        {\r\n            \"id\": \"44\",\r\n            \"answer\": 2\r\n        },\r\n        {\r\n            \"id\": \"47\",\r\n            \"answer\": 4\r\n        },\r\n        {\r\n            \"id\": \"50\",\r\n            \"answer\": 1\r\n        },\r\n        {\r\n            \"id\": \"53\",\r\n            \"answer\": 5\r\n        },\r\n        {\r\n            \"id\": \"56\",\r\n            \"answer\": 4\r\n        },\r\n        {\r\n            \"id\": \"59\",\r\n            \"answer\": 3\r\n        },\r\n        {\r\n            \"id\": \"62\",\r\n            \"answer\": 5\r\n        },\r\n        {\r\n            \"id\": \"65\",\r\n            \"answer\": 4\r\n        },\r\n        {\r\n            \"id\": \"68\",\r\n            \"answer\": 2\r\n        },\r\n        {\r\n            \"id\": \"71\",\r\n            \"answer\": 5\r\n        },\r\n        {\r\n            \"id\": \"74\",\r\n            \"answer\": 2\r\n        },\r\n        {\r\n            \"id\": \"77\",\r\n            \"answer\": 4\r\n        },\r\n        {\r\n            \"id\": \"80\",\r\n            \"answer\": 2\r\n        },\r\n        {\r\n            \"id\": \"83\",\r\n            \"answer\": 2\r\n        },\r\n        {\r\n            \"id\": \"86\",\r\n            \"answer\": 5\r\n        },\r\n        {\r\n            \"id\": \"89\",\r\n            \"answer\": 4\r\n        },\r\n        {\r\n            \"id\": \"92\",\r\n            \"answer\": 2\r\n        },\r\n        {\r\n            \"id\": \"95\",\r\n            \"answer\": 2\r\n        },\r\n        {\r\n            \"id\": \"98\",\r\n            \"answer\": 2\r\n        },\r\n        {\r\n            \"id\": \"101\",\r\n            \"answer\": 5\r\n        },\r\n        {\r\n            \"id\": \"104\",\r\n            \"answer\": 5\r\n        },\r\n        {\r\n            \"id\": \"107\",\r\n            \"answer\": 4\r\n        },\r\n        {\r\n            \"id\": \"110\",\r\n            \"answer\": 4\r\n        },\r\n        {\r\n            \"id\": \"113\",\r\n            \"answer\": 2\r\n        },\r\n        {\r\n            \"id\": \"116\",\r\n            \"answer\": 2\r\n        },\r\n        {\r\n            \"id\": \"119\",\r\n            \"answer\": 1\r\n        },\r\n        {\r\n            \"id\": \"122\",\r\n            \"answer\": 3\r\n        },\r\n        {\r\n            \"id\": \"125\",\r\n            \"answer\": 3\r\n        },\r\n        {\r\n            \"id\": \"128\",\r\n            \"answer\": 5\r\n        },\r\n        {\r\n            \"id\": \"131\",\r\n            \"answer\": 2\r\n        },\r\n        {\r\n            \"id\": \"134\",\r\n            \"answer\": 5\r\n        },\r\n        {\r\n            \"id\": \"137\",\r\n            \"answer\": 1\r\n        },\r\n        {\r\n            \"id\": \"140\",\r\n            \"answer\": 5\r\n        },\r\n        {\r\n            \"id\": \"143\",\r\n            \"answer\": 2\r\n        },\r\n        {\r\n            \"id\": \"146\",\r\n            \"answer\": 5\r\n        },\r\n        {\r\n            \"id\": \"149\",\r\n            \"answer\": 3\r\n        }\r\n    ],\r\n    \"start_time\": \"1776765260\",\r\n    \"end_time\": \"1776765304\",\r\n    \"variant_type\": \"\"\r\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{BASE_URL}}questions/submit",
+              "host": [
+                "{{BASE_URL}}questions"
+              ],
+              "path": [
+                "submit"
+              ]
+            },
+            "description": "### API Name : Submit Question Detail\n\n**Endpoint:**  \n`POST /api/v1/questions/submit`\n\n**Base URL:**  \n`http://localhost:3003`\n\n---\n\n### **Description**\n\nThis API is used to submit quiz responses for a user. It evaluates the provided answers along with metadata such as timing, device information, and location data, and processes the quiz submission.\n\n---\n\n### **Headers**\n\n| Key | Required | Description |\n| --- | --- | --- |\n| x-host | Yes | Host identifier (e.g., `iqpro.ai`) |\n| ip_address | Yes | Client IP address |\n| Content-Type | Yes | Must be `application/json` |\n| Authorization | Yes | Bearer token or API authorization key |\n\n---\n\n### **Request Body (JSON)**\n\n``` json\n{\n  \"email\": \"demo@gmail.com\",\n  \"variant_type\":\"\"\n  \"quiz_data\": [\n    {\n      \"id\": 357,\n      \"answer\": 352\n    }\n  ],\n  \"start_time\": 1776666286298,\n  \"end_time\": 1776666310775,\n  \"prc_id\": \"\",\n  \"pricing_discount\": {\n    \"mdid\": \"\"\n  },\n  \"user_device_info\": {\n    \"user_device\": \"Desktop\",\n    \"user_os\": \"Windows\",\n    \"user_browser\": \"Chrome\"\n  },\n  \"landing_url_detail\": {\n    \"landing_url\": \"https://iqpro.ai/\",\n    \"landing_time\": null\n  },\n  \"geo_data\": {\n    \"city\": \"Mumbai\",\n    \"region\": \"Maharashtra\"\n  }\n}\n\n ```\n\n---\n\n### **Field Descriptions**\n\n| Field | Type | Required | Description |\n| --- | --- | --- | --- |\n| email | string | Yes | User's email address |\n| quiz_data | array | Yes | List of question IDs and selected answers |\n| quiz_data\\[\\].id | integer | Yes | Question ID |\n| quiz_data\\[\\].answer | integer | Yes | Selected answer ID |\n| start_time | number | Yes | Quiz start timestamp (milliseconds) |\n| end_time | number | Yes | Quiz end timestamp (milliseconds) |\n| prc_id | string | No | Pricing ID if applicable |\n| pricing_discount | object | No | Discount-related details |\n| pricing_discount.mdid | string | No | Discount identifier |\n| user_device_info | object | No | Information about user device |\n| user_device_info.user_device | string | No | Device type (e.g., Desktop, Mobile) |\n| user_device_info.user_os | string | No | Operating system |\n| user_device_info.user_browser | string | No | Browser used |\n| landing_url_detail | object | No | Landing page information |\n| landing_url_detail.landing_url | string | No | URL from where user started |\n| landing_url_detail.landing_time | number/null | No | Timestamp of landing |\n| geo_data | object | No | Geographic information |\n| geo_data.city | string | No | User's city |\n| geo_data.region | string | No | User's region/state |\n| variant_type | string | No | control/variation |\n\n### **Response**\n\n**Success (200 / 201)**  \nReturns quiz submission result, which may include:\n\n``` json\n{\n  \"message\": \"Quiz submitted successfully\",\n  \"result_id\": 123\n}\n\n ```\n\n---\n\n### **Error Responses**\n\n- `400 Bad Request` – Invalid input data\n    \n- `401 Unauthorized` – Invalid or missing authorization\n    \n- `500 Internal Server Error` – Server-side issue\n    \n\n---\n\n### **Notes**\n\n- Ensure all required fields are provided.\n    \n- `quiz_data` must include valid question and answer IDs.\n    \n- Timestamps should be in milliseconds.\n    \n- Optional fields can be omitted if not applicable.\n    \n- This API processes and stores the quiz result for further use."
+          },
+          "response": [
+            {
+              "name": "Submit Question Response",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "x-host",
+                    "value": "{{x-host}}",
+                    "type": "text"
+                  },
+                  {
+                    "key": "ip_address",
+                    "value": "122.170.99.65",
+                    "type": "text"
+                  },
+                  {
+                    "key": "",
+                    "value": "",
+                    "type": "text"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\r\n    \"email\": \"demo@gmail.com\",\r\n    \"quiz_data\": [\r\n        {\r\n            \"id\": 357,\r\n            \"answer\": 352\r\n        },\r\n        {\r\n            \"id\": 364,\r\n            \"answer\": 358\r\n        },\r\n        {\r\n            \"id\": 371,\r\n            \"answer\": 363\r\n        },\r\n        {\r\n            \"id\": 378,\r\n            \"answer\": 374\r\n        },\r\n        {\r\n            \"id\": 385,\r\n            \"answer\": 376\r\n        },\r\n        {\r\n            \"id\": 392,\r\n            \"answer\": 386\r\n        },\r\n        {\r\n            \"id\": 399,\r\n            \"answer\": 391\r\n        },\r\n        {\r\n            \"id\": 406,\r\n            \"answer\": 398\r\n        },\r\n        {\r\n            \"id\": 413,\r\n            \"answer\": 399\r\n        },\r\n        {\r\n            \"id\": 420,\r\n            \"answer\": 406\r\n        },\r\n        {\r\n            \"id\": 427,\r\n            \"answer\": 413\r\n        },\r\n        {\r\n            \"id\": 434,\r\n            \"answer\": 421\r\n        },\r\n        {\r\n            \"id\": 441,\r\n            \"answer\": 425\r\n        },\r\n        {\r\n            \"id\": 448,\r\n            \"answer\": 432\r\n        },\r\n        {\r\n            \"id\": 518,\r\n            \"answer\": 489\r\n        },\r\n        {\r\n            \"id\": 525,\r\n            \"answer\": 499\r\n        }\r\n    ],\r\n    \"start_time\": 1776666286298,\r\n    \"end_time\": 1776666310775,\r\n    \"prc_id\": \"\",\r\n    \"pricing_discount\": {\r\n        \"mdid\": \"\"\r\n    },\r\n    \"user_device_info\": {\r\n        \"user_device\": \"Desktop\",\r\n        \"user_os\": \"Windows\",\r\n        \"user_browser\": \"Chrome\"\r\n    },\r\n    \"landing_url_detail\": {\r\n        \"landing_url\": \"https://iqpro.ai/\",\r\n        \"landing_time\": null\r\n    },\r\n    \"geo_data\": {\r\n        \"city\": \"Mumbai\",\r\n        \"region\": \"Maharashtra\"\r\n    }\r\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{BASE_URL}}questions/submit",
+                  "host": [
+                    "{{BASE_URL}}questions"
+                  ],
+                  "path": [
+                    "submit"
+                  ]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": null,
+              "header": [
+                {
+                  "key": "X-Powered-By",
+                  "value": "Express"
+                },
+                {
+                  "key": "Access-Control-Allow-Origin",
+                  "value": "*"
+                },
+                {
+                  "key": "Access-Control-Allow-Methods",
+                  "value": "GET, POST, PUT, DELETE, OPTIONS, PATCH"
+                },
+                {
+                  "key": "Access-Control-Allow-Headers",
+                  "value": "Content-Type, Authorization, X-Api-Key, X-Amz-Date, X-Amz-Security-Token, X-Amz-User-Agent, X-Amzn-Trace-Id, access-control-allow-origin"
+                },
+                {
+                  "key": "Access-Control-Allow-Credentials",
+                  "value": "true"
+                },
+                {
+                  "key": "Content-Type",
+                  "value": "application/json; charset=utf-8"
+                },
+                {
+                  "key": "Content-Length",
+                  "value": "2094"
+                },
+                {
+                  "key": "ETag",
+                  "value": "W/\"82e-9FNZIqkFhXqRbywyYgS+lCSixWk\""
+                },
+                {
+                  "key": "Date",
+                  "value": "Mon, 20 Apr 2026 09:56:53 GMT"
+                },
+                {
+                  "key": "Connection",
+                  "value": "keep-alive"
+                },
+                {
+                  "key": "Keep-Alive",
+                  "value": "timeout=5"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n    \"meta\": {\n        \"message\": \"Question submitted\",\n        \"success\": true,\n        \"status\": 200\n    },\n    \"data\": {\n        \"email\": \"iqprolivebestcat@yopmail.com\",\n        \"quiz_duration\": {\n            \"total_seconds\": 24,\n            \"total_minutes_label\": \"00:24\"\n        },\n        \"quiz_result_id\": 37674,\n        \"best_category\": {\n            \"category\": \"numerical_pattern_reasoning\",\n            \"correct_count\": 0,\n            \"total_count\": 7,\n            \"standard_score\": \"79.26\",\n            \"total_raw_score\": 0,\n            \"name\": \"Numerical Pattern Reasoning\",\n            \"id\": 1,\n            \"iq_score_slug\": \"below_average\",\n            \"iq_score_slug_colour\": \"#f05426\",\n            \"iq_score\": \"79.26\",\n            \"category_label_for_quiz\": \"Numerical Pattern Reasoning\"\n        },\n        \"pricing_info\": {\n            \"payment_text\": {\n                \"first_sale\": \"IQ Pro Results\",\n                \"cross_sale\": \"IQ Pro Report\",\n                \"subscription\": \"subscription completed successfully\",\n                \"first_sale_first_split\": \"IQ Pro Split Payment\",\n                \"first_sale_second_split\": \"first_sale_second_split completed successfully\"\n            },\n            \"currency_code\": \"USD\",\n            \"first_sale_price\": \"4.99\",\n            \"first_sale_cents_price\": \"499\",\n            \"cross_sale_price\": \"9.99\",\n            \"subscription_price\": \"29.99\",\n            \"subscription_after\": \"FIRST_SELL\",\n            \"payment_gateways\": [\n                {\n                    \"id\": \"1\",\n                    \"name\": \"Stripe\"\n                },\n                {\n                    \"id\": \"2\",\n                    \"name\": \"PayPal\"\n                }\n            ],\n            \"free_access_enabled\": false,\n            \"promocode_id\": \"\",\n            \"cross_sale_compulsory\": false,\n            \"has_split_payment\": false,\n            \"show_cross_sale_page\": true,\n            \"iq_booster_validity\": null,\n            \"payment_type\": \"subscription_after_first_sell\",\n            \"transactions\": {\n                \"first_sale\": {\n                    \"description\": \"IQ Pro Results\",\n                    \"amount\": \"4.99\",\n                    \"amount_cents\": \"499\",\n                    \"is_compulsory\": true\n                },\n                \"subscription\": {\n                    \"description\": \"subscription completed successfully\",\n                    \"amount\": \"29.99\",\n                    \"amount_cents\": \"2999\",\n                    \"is_compulsory\": true\n                },\n                \"cross_sale\": {\n                    \"description\": \"IQ Pro Report\",\n                    \"amount\": \"9.99\",\n                    \"amount_cents\": \"999\",\n                    \"is_compulsory\": false\n                }\n            },\n            \"subscription_day_label\": \"28\",\n            \"first_sale_price_label\": \"$4.99\",\n            \"cross_sale_price_label\": \"$9.99\",\n            \"subscription_price_label\": \"$29.99\",\n            \"first_and_cross_sale_price_label\": \"$14.98\"\n        },\n        \"geo_data\": {\n            \"continent\": \"Asia\",\n            \"continent_code\": \"AS\",\n            \"country\": \"India\",\n            \"country_code\": \"IN\",\n            \"region\": \"MH\",\n            \"city\": \"Mumbai\"\n        },\n        \"email_score\": 5,\n        \"redirect_page\": \"INITIAL_PAYMENT_PAGE\",\n        \"encrypted_quiz_result_id\": \"O59BoVek0rv18Jkw\",\n        \"first_name\": \"\",\n        \"last_name\": \"\",\n        \"age\": \"\",\n        \"gender\": \"\",\n        \"payment_mode\": \"sandbox\",\n        \"iq_score\": \"60.66\"\n    }\n}"
+            }
+          ]
+        },
+        {
+          "name": "Get Quiz Result",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{SECRET_KEY}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "x-host",
+                "value": "{{x-host}}",
+                "type": "text"
+              },
+              {
+                "key": "ip_address",
+                "value": "{{ip}}",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n    \"quiz_result_id\":\"20044593\",\r\n    \"prc_id\": \"\",\r\n    \"pricing_discount\":\"\"\r\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{BASE_URL}}questions/results",
+              "host": [
+                "{{BASE_URL}}questions"
+              ],
+              "path": [
+                "results"
+              ]
+            },
+            "description": "### API Name : Submitted Question Result Detail\n\n**Endpoint:**  \n`POST /api/v1/questions/results`\n\n**Base URL:**  \n`http://localhost:3003`\n\n---\n\n### **Description**\n\nThis API retrieves the quiz result details for a user based on the provided `quiz_result_id`. It returns evaluated quiz data including best-performing category, pricing information, and key details required for the next redirect step in the user journey.\n\n---\n\n### **Headers**\n\n| Key | Required | Description |\n| --- | --- | --- |\n| x-host | Yes | Host identifier (e.g., `iqpro.ai`) |\n| ip_address | Yes | Client IP address |\n| Content-Type | Yes | Must be `application/json` |\n| Authorization | Yes | Bearer token or API authorization key |\n\n---\n\n### **Request Body (JSON)**\n\n``` json\n{\n  \"quiz_result_id\": \"79928\",\n  \"prc_id\": \"\",\n  \"pricing_discount\": \"\"\n}\n\n ```\n\n---\n\n### **Field Descriptions**\n\n| Field | Type | Required | Description |\n| --- | --- | --- | --- |\n| quiz_result_id | string/integer | Yes | Unique identifier for the quiz result |\n| prc_id | string | No | Pricing ID if applicable |\n| pricing_discount | string | No | Discount code or identifier |\n\n---\n\n### **Response**\n\n**Success (200)**  \nReturns quiz result details including:\n\n``` json\n{\n  \"data\": {\n    \"email\": \"string\",\n    \"quiz_duration\": {\n      \"total_seconds\": 0,\n      \"total_minutes_label\": \"string\"\n    },\n    \"quiz_result_id\": 0,\n    \"best_category\": {\n      \"category\": \"string\",\n      \"correct_count\": 0,\n      \"total_count\": 0,\n      \"standard_score\": \"string\",\n      \"name\": \"string\",\n      \"iq_score\": \"string\"\n    },\n    \"pricing_info\": {\n      \"currency_code\": \"string\",\n      \"first_sale_price\": \"string\",\n      \"cross_sale_price\": \"string\",\n      \"subscription_price\": \"string\",\n      \"payment_gateways\": []\n    },\n    \"redirect_page\": \"string\",\n    \"encrypted_quiz_result_id\": \"string\",\n    \"payment_mode\": \"string\",\n    \"iq_score\": \"string\"\n  }\n}\n\n ```\n\n---\n\n### **Error Responses**\n\n- `400 Bad Request` – Invalid input data\n    \n- `401 Unauthorized` – Invalid or missing authorization\n    \n- `500 Internal Server Error` – Server-side issue\n    \n\n---\n\n### **Notes**\n\n- This API is used after quiz submission to fetch processed results.\n    \n- It provides **best category insights**, **pricing details**, and **next-step navigation info**.\n    \n- `redirect_page` determines the next UI flow (e.g., payment page).\n    \n- Optional fields can be left empty if not applicable.\n    \n- Ensure a valid `quiz_result_id` is provided."
+          },
+          "response": [
+            {
+              "name": "Get Quiz Result",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "x-host",
+                    "value": "{{x-host}}",
+                    "type": "text"
+                  },
+                  {
+                    "key": "ip_address",
+                    "value": "{{ip}}",
+                    "type": "text"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\r\n    \"quiz_result_id\":\"79928\",\r\n    \"prc_id\": \"\",\r\n    \"pricing_discount\":\"\"\r\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{BASE_URL}}questions/results",
+                  "host": [
+                    "{{BASE_URL}}questions"
+                  ],
+                  "path": [
+                    "results"
+                  ]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": null,
+              "header": [
+                {
+                  "key": ":status",
+                  "value": 200
+                },
+                {
+                  "key": "date",
+                  "value": "Mon, 20 Apr 2026 09:50:22 GMT"
+                },
+                {
+                  "key": "content-type",
+                  "value": "application/json; charset=utf-8"
+                },
+                {
+                  "key": "server",
+                  "value": "cloudflare"
+                },
+                {
+                  "key": "nel",
+                  "value": "{\"report_to\":\"cf-nel\",\"success_fraction\":0.0,\"max_age\":604800}"
+                },
+                {
+                  "key": "vary",
+                  "value": "Accept-Encoding"
+                },
+                {
+                  "key": "x-powered-by",
+                  "value": "Express"
+                },
+                {
+                  "key": "access-control-allow-origin",
+                  "value": "*"
+                },
+                {
+                  "key": "access-control-allow-methods",
+                  "value": "GET, POST, PUT, DELETE, OPTIONS, PATCH"
+                },
+                {
+                  "key": "access-control-allow-headers",
+                  "value": "Content-Type, Authorization, X-Api-Key, X-Amz-Date, X-Amz-Security-Token, X-Amz-User-Agent, X-Amzn-Trace-Id, access-control-allow-origin"
+                },
+                {
+                  "key": "access-control-allow-credentials",
+                  "value": "true"
+                },
+                {
+                  "key": "etag",
+                  "value": "W/\"76c-lstjBHaQcbFqdm91aUdEwjTAYF0\""
+                },
+                {
+                  "key": "x-frame-options",
+                  "value": "SAMEORIGIN"
+                },
+                {
+                  "key": "x-content-type-options",
+                  "value": "nosniff"
+                },
+                {
+                  "key": "x-xss-protection",
+                  "value": "1; mode=block"
+                },
+                {
+                  "key": "referrer-policy",
+                  "value": "strict-origin-when-cross-origin"
+                },
+                {
+                  "key": "permissions-policy",
+                  "value": "geolocation=(), microphone=(), camera=()"
+                },
+                {
+                  "key": "content-encoding",
+                  "value": "gzip"
+                },
+                {
+                  "key": "cf-cache-status",
+                  "value": "DYNAMIC"
+                },
+                {
+                  "key": "report-to",
+                  "value": "{\"group\":\"cf-nel\",\"max_age\":604800,\"endpoints\":[{\"url\":\"https://a.nel.cloudflare.com/report/v4?s=BNVwqWySgHQfz03SjVWfB1BKeUNYAPCk3vJOHN2B3bu3icFK9Ydk%2FG9K0pKbleChISOPves63qN2xGjCVkUmrKpeZ4etpiWT66Tw4rzOpmYvLjA6t%2F0Dcp7ozqwCXTH15f33pXo%3D\"}]}"
+                },
+                {
+                  "key": "cf-ray",
+                  "value": "9ef33e8a3dece22c-MRS"
+                },
+                {
+                  "key": "alt-svc",
+                  "value": "h3=\":443\"; ma=86400"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n    \"meta\": {\n        \"message\": \"Quiz result fetched\",\n        \"success\": true,\n        \"status\": 200\n    },\n    \"data\": {\n        \"email\": \"japancategorytest@yopmail.com\",\n        \"quiz_duration\": {\n            \"total_seconds\": 17,\n            \"total_minutes_label\": \"00:17\"\n        },\n        \"quiz_result_id\": 79928,\n        \"best_category\": {\n            \"category\": \"visuospatial_insight\",\n            \"correct_count\": 4,\n            \"total_count\": 6,\n            \"standard_score\": \"113.62\",\n            \"total_raw_score\": 66.67,\n            \"name\": \"Visuospatial Insight\",\n            \"id\": 3,\n            \"iq_score_slug\": \"above_average\",\n            \"iq_score_slug_colour\": \"#c0cc33\",\n            \"iq_score\": \"113.62\",\n            \"category_label_for_quiz\": \"\"\n        },\n        \"pricing_info\": {\n            \"payment_text\": {\n                \"first_sale\": \"IQ Pro Results\",\n                \"cross_sale\": \"IQ Pro Report\",\n                \"subscription\": \"subacription Updated\",\n                \"first_sale_first_split\": \"IQ Pro Split Payment\",\n                \"first_sale_second_split\": \"IQ Pro second Split Payment\"\n            },\n            \"currency_code\": \"JPY\",\n            \"first_sale_price\": \"199.00\",\n            \"first_sale_cents_price\": \"199.00\",\n            \"cross_sale_price\": \"1990.00\",\n            \"subscription_price\": \"4990.00\",\n            \"subscription_after\": \"FIRST_SELL\",\n            \"payment_gateways\": [\n                {\n                    \"id\": \"1\",\n                    \"name\": \"Stripe\"\n                }\n            ],\n            \"free_access_enabled\": false,\n            \"promocode_id\": \"\",\n            \"cross_sale_compulsory\": false,\n            \"has_split_payment\": false,\n            \"show_cross_sale_page\": true,\n            \"iq_booster_validity\": null,\n            \"payment_type\": \"subscription_after_first_sell\",\n            \"transactions\": {\n                \"first_sale\": {\n                    \"description\": \"IQ Pro Results\",\n                    \"amount\": \"199\",\n                    \"amount_cents\": \"199\",\n                    \"is_compulsory\": true\n                },\n                \"subscription\": {\n                    \"description\": \"subacription Updated\",\n                    \"amount\": \"4990\",\n                    \"amount_cents\": \"4990\",\n                    \"is_compulsory\": true\n                },\n                \"cross_sale\": {\n                    \"description\": \"IQ Pro Report\",\n                    \"amount\": \"1990\",\n                    \"amount_cents\": \"1990\",\n                    \"is_compulsory\": false\n                }\n            },\n            \"subscription_day_label\": \"28\",\n            \"first_sale_price_label\": \"199 円\",\n            \"cross_sale_price_label\": \"1,990 円\",\n            \"subscription_price_label\": \"4,990 円\",\n            \"first_and_cross_sale_price_label\": \"2,189 円\"\n        },\n        \"geo_data\": null,\n        \"email_score\": null,\n        \"redirect_page\": \"INITIAL_PAYMENT_PAGE\",\n        \"encrypted_quiz_result_id\": \"ABQbKEj09m2l746p\",\n        \"first_name\": \"\",\n        \"last_name\": \"\",\n        \"age\": \"\",\n        \"gender\": \"\",\n        \"payment_mode\": \"live\",\n        \"iq_score\": \"94.45\"\n    }\n}"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Stripe Payment",
+      "item": [
+        {
+          "name": "create-payment-intent",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{SECRET_KEY}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "x-host",
+                "value": "{{x-host}}",
+                "type": "text"
+              },
+              {
+                "key": "ip_address",
+                "value": "122.170.99.65",
+                "type": "text"
+              },
+              {
+                "key": "User-Agent",
+                "value": "",
+                "type": "text",
+                "disabled": true
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n    \"email\": \"ssssss@itpathsolutions.com\",\r\n    \"quiz_result_id\": 724,\r\n    \"user_on_iqbooster\": \"\",\r\n    \"prc_id\": \"\",\r\n    \"pricing_discount\": \"\",\r\n    \"payment_method_type\":\"\"\r\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{BASE_URL}}payment/stripe/create-payment-intent",
+              "host": [
+                "{{BASE_URL}}payment"
+              ],
+              "path": [
+                "stripe",
+                "create-payment-intent"
+              ]
+            },
+            "description": "### API Name : Create Stripe Payment Intent\n\n**Endpoint:**  \n`POST /api/v1/payment/stripe/create-payment-intent`\n\n**Base URL:**  \n`http://localhost:3003`\n\n---\n\n### **Description**\n\nThis API is used to create a Stripe payment intent for a user. It initializes the payment process and **returns only the** **`client_secret`**, which is required on the frontend to complete the payment using Stripe.\n\n---\n\n### **Headers**\n\n| Key | Required | Description |\n| --- | --- | --- |\n| x-host | Yes | Host identifier (e.g., `iqpro.ai`) |\n| ip_address | Yes | Client IP address |\n| Content-Type | Yes | Must be `application/json` |\n| Authorization | Yes | Bearer token or API authorization key |\n\n---\n\n### **Request Body (JSON)**\n\n``` json\n{\n  \"email\": \"ssssss@itpathsolutions.com\",\n  \"quiz_result_id\": 724,\n  \"user_on_iqbooster\": \"\",\n  \"prc_id\": \"\",\n  \"pricing_discount\": \"\",\n  \"payment_method_type\": \"\"\n}\n\n ```\n\n---\n\n### **Field Descriptions**\n\n| Field | Type | Required | Description |\n| --- | --- | --- | --- |\n| email | string | Yes | User's email address |\n| quiz_result_id | integer | Yes | Identifier for the user's quiz result |\n| user_on_iqbooster | string | No | Indicates if the user exists on IQBooster platform |\n| prc_id | string | No | Pricing ID associated with the selected plan |\n| pricing_discount | string | No | Discount code or value applied |\n| payment_method_type | string | No | Payment method type (e.g., `card`) |\n\n---\n\n### **Response**\n\n**Success (200 / 201)**\n\n``` json\n{\n  \"client_secret\": \"string\"\n}\n\n ```\n\n---\n\n### **Error Responses**\n\n- `400 Bad Request` – Invalid input data\n    \n- `401 Unauthorized` – Invalid or missing authorization\n    \n- `500 Internal Server Error` – Server-side issue\n    \n\n---\n\n### **Notes**\n\n- This API **only generates the Stripe payment intent** and returns `client_secret`.\n    \n- The actual payment must be completed on the frontend using Stripe SDK.\n    \n- Optional fields can be left empty if not applicable."
+          },
+          "response": []
+        },
+        {
+          "name": "confirm-first-sale-payment",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{SECRET_KEY}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "x-host",
+                "value": "wwpersonalitytest.com",
+                "type": "text"
+              },
+              {
+                "key": "ip",
+                "value": "{{ip}}",
+                "type": "text",
+                "disabled": true
+              },
+              {
+                "key": "User-Agent",
+                "value": "",
+                "type": "text",
+                "disabled": true
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n    \"payment_intent_id\": \"pi_3TE808FarUj5LouC1evWoKfJ\",\r\n    \"quiz_result_id\": 71,\r\n    \"user_on_iqbooster\": \"\",\r\n    \"prc_id\": \"\",\r\n    \"pricing_discount\": \"\"\r\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{BASE_URL}}payment/stripe/first-sale/payments/confirm",
+              "host": [
+                "{{BASE_URL}}payment"
+              ],
+              "path": [
+                "stripe",
+                "first-sale",
+                "payments",
+                "confirm"
+              ]
+            },
+            "description": "### **API Name:** Confirm Stripe Payment Intent (First Sale Confirm)\n\n**Endpoint:**  \n`POST /api/v1/payment/stripe/first-sale/payments/confirm`\n\n**Base URL:**  \n`http://localhost:3003`\n\n---\n\n### **Description**\n\nThis API is used to confirm a Stripe payment intent for the first sale. After successful confirmation, it returns cross-sell offer details and a redirect page key, which the frontend should use to determine the next user flow.\n\n---\n\n### **Headers**\n\n| Key | Required | Description |\n| --- | --- | --- |\n| x-host | Yes | Host identifier (e.g., `wwpersonalitytest.com`) |\n| Content-Type | Yes | Must be `application/json` |\n| Authorization | Yes | Bearer token or API authorization key |\n\n---\n\n### **Request Body (JSON)**\n\n``` json\n{\n  \"payment_intent_id\": \"pi_3TE808FarUj5LouC1evWoKfJ\",\n  \"quiz_result_id\": 71,\n  \"user_on_iqbooster\": \"\",\n  \"prc_id\": \"\",\n  \"pricing_discount\": \"\"\n}\n\n ```\n\n---\n\n### **Field Descriptions**\n\n| Field | Type | Required | Description |\n| --- | --- | --- | --- |\n| payment_intent_id | string | Yes | Stripe payment intent ID |\n| quiz_result_id | integer | Yes | Associated quiz result ID |\n| user_on_iqbooster | string | No | Indicates if user exists on IQBooster platform |\n| prc_id | string | No | Pricing ID if applicable |\n| pricing_discount | string | No | Discount code or identifier |\n\n---\n\n### **Response**\n\n**Success (200)**\n\n``` json\n{\n  \"meta\": {\n    \"message\": \"Payment confirmed\",\n    \"success\": true,\n    \"status\": 200\n  },\n  \"data\": {\n    \"cross_sale\": {\n      \"description\": \"string\",\n      \"amount\": \"string\",\n      \"amount_cents\": \"string\",\n      \"is_compulsory\": true\n    },\n    \"redirect_page\": \"string\",\n    \"first_sale_usd_price\": 0\n  }\n}\n\n ```\n\n---\n\n### **Error Responses**\n\n- `400 Bad Request` – Invalid input data\n    \n- `401 Unauthorized` – Invalid or missing authorization\n    \n- `500 Internal Server Error` – Server-side issue\n    \n\n---\n\n### **Notes**\n\n- This API confirms the Stripe payment for the first sale.\n    \n- On success, it returns **cross-sale offer details** and a **redirect_page** key.\n    \n- The frontend must use `redirect_page` to determine the next screen (e.g., cross-sell offer page).\n    \n- `cross_sale` contains pricing and requirement details for the next offer.\n    \n- Optional fields can be left empty if not applicable."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Paypal",
+      "item": [
+        {
+          "name": "first-sale",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{SECRET_KEY}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "x-host",
+                "value": "wwiqtest.com",
+                "type": "text"
+              },
+              {
+                "key": "ip",
+                "value": "",
+                "type": "text",
+                "disabled": true
+              },
+              {
+                "key": "User-Agent",
+                "value": "",
+                "type": "text",
+                "disabled": true
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n    \"quiz_result_id\": 126,\r\n    \"user_on_iqbooster\": \"\",\r\n    \"prc_id\": \"\",\r\n    \"pricing_discount\": \"\",\r\n    \"payment_method\": \"paypal\",\r\n    \"payment_status\": \"paid\",\r\n    \"charge_id\": \"5TH057847P5087634\",\r\n    \"paypal_order_id\": \"6AY24215UP439605K\",\r\n    \"item_price\": 0.99,\r\n    \"paypal_customer_email\": \"tejasm-merchant@itpathsolutions.co.in\",\r\n    \"payment_method_id\": \"6ma30955la5791200\",\r\n    \"paypal_customer_id\": \"JgfFAdkiRu\"\r\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{BASE_URL}}payment/paypal/first-sale/payments/confirm",
+              "host": [
+                "{{BASE_URL}}payment"
+              ],
+              "path": [
+                "paypal",
+                "first-sale",
+                "payments",
+                "confirm"
+              ]
+            },
+            "description": "### **API Name:** Confirm Paypal Payment Intent (First Sale Confirm)  \n\n**Endpoint:**  \n`POST /api/v1/payment/paypal/first-sale/payments/confirm`\n\n**Base URL:**  \n`http://localhost:3003`\n\n---\n\n### **Description**\n\nThis API is used to confirm the first sale payment using the PayPal payment gateway. After successful confirmation, it processes the transaction and returns the necessary details for the next step in the user flow.\n\n---\n\n### **Headers**\n\n| Key | Required | Description |\n| --- | --- | --- |\n| x-host | Yes | Host identifier (e.g., `wwiqtest.com`) |\n| Content-Type | Yes | Must be `application/json` |\n| Authorization | Yes | Bearer token or API authorization key |\n\n---\n\n### **Request Body (JSON)**\n\n``` json\n{\n  \"quiz_result_id\": 126,\n  \"user_on_iqbooster\": \"\",\n  \"prc_id\": \"\",\n  \"pricing_discount\": \"\",\n  \"payment_method\": \"paypal\",\n  \"payment_status\": \"paid\",\n  \"charge_id\": \"\",\n  \"paypal_order_id\": \"\",\n  \"item_price\": 0.99,\n  \"paypal_customer_email\": \"\",\n  \"payment_method_id\": \"\",\n  \"paypal_customer_id\": \"\"\n}\n\n ```\n\n---\n\n### **Field Descriptions**\n\n| Field | Type | Required | Description |\n| --- | --- | --- | --- |\n| quiz_result_id | integer | Yes | Associated quiz result ID |\n| user_on_iqbooster | string | No | Indicates if user exists on IQBooster platform |\n| prc_id | string | No | Pricing ID if applicable |\n| pricing_discount | string | No | Discount code or identifier |\n| payment_method | string | Yes | Payment method (e.g., `paypal`) |\n| payment_status | string | Yes | Payment status (e.g., `paid`) |\n| charge_id | string | Yes | PayPal transaction/charge ID |\n| paypal_order_id | string | Yes | PayPal order ID |\n| item_price | number | Yes | Paid amount |\n| paypal_customer_email | string | Yes | Customer PayPal email |\n| payment_method_id | string | Yes | PayPal payment method ID |\n| paypal_customer_id | string | Yes | PayPal customer ID |\n\n---\n\n### **Response**\n\n**Success (200)**\n\n``` json\n{\n  \"meta\": {\n    \"message\": \"Payment confirmed\",\n    \"success\": true,\n    \"status\": 200\n  },\n  \"data\": {\n    \"redirect_page\": \"string\"\n  }\n}\n\n ```\n\n---\n\n### **Error Responses**\n\n- `400 Bad Request` – Invalid input data\n    \n- `401 Unauthorized` – Invalid or missing authorization\n    \n- `500 Internal Server Error` – Server-side issue\n    \n\n---\n\n### **Notes**\n\n- This API confirms the **first sale payment via PayPal**.\n    \n- It should be called after successful PayPal transaction completion on the frontend.\n    \n- The response includes a `redirect_page` key to determine the next UI step.\n    \n- Ensure all PayPal transaction details are correctly passed.\n    \n- Optional fields can be left empty if not applicable."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "solidgate",
+      "item": [
+        {
+          "name": "Create-intent",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{SECRET_KEY}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "x-host",
+                "value": "{{x-host}}",
+                "type": "text"
+              },
+              {
+                "key": "ip_address",
+                "value": "122.170.99.65",
+                "description": "Ip address is required",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n    \"email\":\"harshadp+1776680990862@itpathsolutions.com\",\r\n    \"quiz_result_id\":\"37688\",\r\n    \"user_on_iqbooster\":\"\",\r\n    \"prc_id\":\"\",\r\n    \"pricing_discount\":\"\"\r\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{BASE_URL}}payment/solidgate/create-payment-intent",
+              "host": [
+                "{{BASE_URL}}payment"
+              ],
+              "path": [
+                "solidgate",
+                "create-payment-intent"
+              ]
+            },
+            "description": "### **API Name:** Create Solidgate Payment Intent\n\n**Endpoint:**  \n`POST /api/v1/payment/solidgate/create-payment-intent`\n\n**Base URL:**  \n`http://localhost:3003`\n\n---\n\n### **Description**\n\nThis API is used to create a payment intent using the Solidgate payment gateway. It initializes the payment process and returns the required credentials (`paymentIntent`, `merchantId`, and `signature`) needed by the frontend to proceed with the payment.\n\n---\n\n### **Headers**\n\n| Key | Required | Description |\n| --- | --- | --- |\n| x-host | Yes | Host identifier (e.g., `iqpro.ai`) |\n| ip_address | Yes | Client IP address (required) |\n| Content-Type | Yes | Must be `application/json` |\n| Authorization | Yes | Bearer token or API authorization key |\n\n---\n\n### **Request Body (JSON)**\n\n``` json\n{\n  \"email\": \"test@mail.com\",\n  \"quiz_result_id\": \"125\",\n  \"user_on_iqbooster\": \"\",\n  \"prc_id\": \"\",\n  \"pricing_discount\": \"\"\n}\n\n ```\n\n---\n\n### **Field Descriptions**\n\n| Field | Type | Required | Description |\n| --- | --- | --- | --- |\n| email | string | Yes | User's email address |\n| quiz_result_id | string/integer | Yes | Unique identifier for the quiz result |\n| user_on_iqbooster | string | No | Indicates if user exists on IQBooster platform |\n| prc_id | string | No | Pricing ID if applicable |\n| pricing_discount | string | No | Discount code or identifier |\n\n---\n\n### **Response**\n\n**Success (200)**\n\n``` json\n{\n  \"meta\": {\n    \"message\": \"Payment intent created\",\n    \"success\": true,\n    \"status\": 200\n  },\n  \"data\": {\n    \"paymentIntent\": \"string\",\n    \"merchantId\": \"string\",\n    \"signature\": \"string\"\n  }\n}\n\n ```\n\n---\n\n### **Error Responses**\n\n- `400 Bad Request` – Invalid input data\n    \n- `401 Unauthorized` – Invalid or missing authorization\n    \n- `500 Internal Server Error` – Server-side issue\n    \n\n---\n\n### **Notes**\n\n- This API creates a Solidgate payment intent for initiating payment.\n    \n- The frontend must use `paymentIntent`, `merchantId`, and `signature` to proceed with payment.\n    \n- **`ip_address`** **header is mandatory** for this API.\n    \n- Ensure that **`email`** **and** **`quiz_result_id`** **match correctly** with the user’s quiz session.\n    \n- Optional fields can be left empty if not applicable."
+          },
+          "response": []
+        },
+        {
+          "name": "confirm-first-sale",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{SECRET_KEY}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "x-host",
+                "value": "{{x-host}}",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n   \r\n    \"quiz_result_id\": \"125\",\r\n    \"user_on_iqbooster\": \"\",\r\n    \"prc_id\": \"\",\r\n    \"pricing_discount\": \"\",\r\n    \"payment_obj\": {\r\n        \"type\": \"success\",\r\n        \"entity\": \"form\",\r\n        \"order\": {\r\n            \"status\": \"auth_ok\",\r\n            \"currency\": \"USD\",\r\n            \"amount\": 499,\r\n            \"order_id\": \"tes701725243\",\r\n            \"customer_email\": \"test_1772211472383@mail.com\",\r\n            \"descriptor\": \"DSRP sandbox payments\"\r\n        }\r\n    }\r\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{BASE_URL}}payment/solidgate/first-sale/payments/confirm",
+              "host": [
+                "{{BASE_URL}}payment"
+              ],
+              "path": [
+                "solidgate",
+                "first-sale",
+                "payments",
+                "confirm"
+              ]
+            },
+            "description": "### **API Name:** Confirm Solidgate Payment (First Sale Confirm)\n\n**Endpoint:**  \n`POST /api/v1/payment/solidgate/first-sale/payments/confirm`\n\n**Base URL:**  \n`http://localhost:3003`\n\n---\n\n### **Description**\n\nThis API is used to confirm the first sale payment using the Solidgate payment gateway. After successful confirmation, it returns cross-sell offer details and a redirect page key, which the frontend should use to determine the next step in the user journey.\n\n---\n\n### **Headers**\n\n| Key | Required | Description |\n| --- | --- | --- |\n| x-host | Yes | Host identifier (e.g., `wwpersonalitytest.com`) |\n| Content-Type | Yes | Must be `application/json` |\n| Authorization | Yes | Bearer token or API authorization key |\n\n---\n\n### **Request Body (JSON)**\n\n``` json\n{\n  \"quiz_result_id\": \"125\",\n  \"user_on_iqbooster\": \"\",\n  \"prc_id\": \"\",\n  \"pricing_discount\": \"\",\n  \"payment_obj\": {\n    \"type\": \"success\",\n    \"entity\": \"form\",\n    \"order\": {\n      \"status\": \"auth_ok\",\n      \"currency\": \"USD\",\n      \"amount\": 499,\n      \"order_id\": \"tes701725243\",\n      \"customer_email\": \"test_1772211472383@mail.com\",\n      \"descriptor\": \"DSRP sandbox payments\"\n    }\n  }\n}\n\n ```\n\n---\n\n### **Field Descriptions**\n\n| Field | Type | Required | Description |\n| --- | --- | --- | --- |\n| quiz_result_id | string/integer | Yes | Associated quiz result ID |\n| user_on_iqbooster | string | No | Indicates if user exists on IQBooster platform |\n| prc_id | string | No | Pricing ID if applicable |\n| pricing_discount | string | No | Discount code or identifier |\n| payment_obj | object | Yes | Solidgate payment response object |\n| payment_obj.type | string | Yes | Payment result type (e.g., `success`) |\n| payment_obj.entity | string | Yes | Entity type (e.g., `form`) |\n| payment_obj.order | object | Yes | Order/payment details |\n| payment_obj.order.status | string | Yes | Payment status (e.g., `auth_ok`) |\n| payment_obj.order.currency | string | Yes | Currency code |\n| payment_obj.order.amount | number | Yes | Payment amount (in smallest currency unit) |\n| payment_obj.order.order_id | string | Yes | Unique order identifier |\n| payment_obj.order.customer_email | string | Yes | Customer email |\n| payment_obj.order.descriptor | string | No | Payment descriptor |\n\n---\n\n### **Response**\n\n**Success (200)**\n\n``` json\n{\n  \"meta\": {\n    \"message\": \"Payment confirmed\",\n    \"success\": true,\n    \"status\": 200\n  },\n  \"data\": {\n    \"cross_sale\": {\n      \"description\": \"string\",\n      \"amount\": \"string\",\n      \"amount_cents\": \"string\",\n      \"is_compulsory\": true\n    },\n    \"redirect_page\": \"string\",\n    \"first_sale_usd_price\": 0\n  }\n}\n\n ```\n\n---\n\n### **Error Responses**\n\n- `400 Bad Request` – Invalid input data\n    \n- `401 Unauthorized` – Invalid or missing authorization\n    \n- `500 Internal Server Error` – Server-side issue\n    \n\n---\n\n### **Notes**\n\n- This API confirms the **first sale payment via Solidgate**.\n    \n- It should be called after receiving a successful payment response from Solidgate.\n    \n- The response includes **cross-sale details** and a **redirect_page** key.\n    \n- The frontend must use `redirect_page` to decide the next screen (e.g., cross-sell offer page).\n    \n- Ensure `payment_obj` is passed exactly as received from Solidgate.\n    \n- Optional fields can be left empty if not applicable."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Customer",
+      "item": [
+        {
+          "name": "Update customer Detail",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{SECRET_KEY}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "PUT",
+            "header": [
+              {
+                "key": "x-host",
+                "value": "{{x-host}}",
+                "type": "text"
+              },
+              {
+                "key": "ip_address",
+                "value": "122.170.99.65",
+                "type": "text"
+              },
+              {
+                "key": "",
+                "value": "",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n    \"email\": \"test@test.com\",\r\n    \"quiz_result_id\":\"20044581\",\r\n    \"first_name\":\"Patel 547\",\r\n    \"last_name\":\"Harshad 547\",\r\n    \"age\":\"12\",\r\n    \"gender\":\"male\"\r\n}\r\n ",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{BASE_URL}}customer/update",
+              "host": [
+                "{{BASE_URL}}customer"
+              ],
+              "path": [
+                "update"
+              ]
+            },
+            "description": "### **API Name:** Update Customer Details\n\n**Endpoint:**  \n`PUT /api/v1/customer/update`\n\n**Base URL:**  \n`http://localhost:3003`\n\n---\n\n### **Description**\n\nThis API is used to update remaining customer details such as first name, last name, age, and gender. These details are required for generating certificates and reports after quiz completion.\n\n---\n\n### **Headers**\n\n| Key | Required | Description |\n| --- | --- | --- |\n| x-host | Yes | Host identifier (e.g., `wwpersonalitytest.com`) |\n| ip_address | Yes | Client IP address |\n| Content-Type | Yes | Must be `application/json` |\n| Authorization | Yes | Bearer token or API authorization key |\n\n---\n\n### **Request Body (JSON)**\n\n``` json\n{\n  \"email\": \"test@test.com\",\n  \"quiz_result_id\": \"37688\",\n  \"first_name\": \"Patel\",\n  \"last_name\": \"Harshad\",\n  \"age\": \"12\",\n  \"gender\": \"male\"\n}\n\n ```\n\n---\n\n### **Field Descriptions**\n\n| Field | Type | Required | Description |\n| --- | --- | --- | --- |\n| email | string | Yes | User's email address |\n| quiz_result_id | string/integer | Yes | Associated quiz result ID |\n| first_name | string | Yes | Customer's first name |\n| last_name | string | Yes | Customer's last name |\n| age | string/integer | Yes | Customer's age |\n| gender | string | Yes | Customer's gender |\n\n---\n\n### **Response**\n\n**Success (200)**\n\n``` json\n{\n  \"meta\": {\n    \"message\": \"Customer details updated\",\n    \"success\": true,\n    \"status\": 200\n  },\n  \"data\": {\n    \"redirect_page\": \"string\",\n    \"quiz_result_id\": 0,\n    \"encrypted_quiz_result_id\": \"string\",\n    \"transactions\": {\n      \"first_sale\": {\n        \"description\": \"string\",\n        \"amount\": \"string\"\n      },\n      \"cross_sale\": {\n        \"description\": \"string\",\n        \"amount\": \"string\"\n      }\n    }\n  }\n}\n\n ```\n\n---\n\n### **Error Responses**\n\n- `400 Bad Request` – Invalid input data\n    \n- `401 Unauthorized` – Invalid or missing authorization\n    \n- `500 Internal Server Error` – Server-side issue\n    \n\n---\n\n### **Notes**\n\n- This API is used to collect **remaining customer details** required for reports and certificates.\n    \n- Ensure `email` and `quiz_result_id` match the existing user record.\n    \n- The response includes a `redirect_page` key for frontend navigation.\n    \n- Sensitive transaction details are omitted in this documentation."
+          },
+          "response": []
+        },
+        {
+          "name": "Thankyou",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{SECRET_KEY}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "x-host",
+                "value": "{{x-host}}",
+                "type": "text"
+              },
+              {
+                "key": "ip_address",
+                "value": "122.170.99.65",
+                "type": "text"
+              },
+              {
+                "key": "",
+                "value": "",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n//    \"quiz_result_id\":\"a3pbg02KPyvAmN6Z\",\r\n   \"quiz_result_id\":\"Xez0l20LaX2pQ4L8\",  // 264\r\n   //\"old_quiz_id\":\"370753\"\r\n    \"old_quiz_id\":\"\"\r\n}\r\n",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{BASE_URL}}customer/thankyou",
+              "host": [
+                "{{BASE_URL}}customer"
+              ],
+              "path": [
+                "thankyou"
+              ]
+            },
+            "description": "### **API Name:** Customer Thank You / Generate Report & Certificate\n\n**Endpoint:**  \n`POST /api/v1/customer/thankyou`\n\n**Base URL:**  \n`http://localhost:3003`\n\n---\n\n### **Description**\n\nThis is the final API in the user flow. It generates and retrieves the user’s quiz report and certificate. It provides URLs to view or download the generated report and certificate, and may also return a promocode URL for accessing additional features or websites.\n\n---\n\n### **Headers**\n\n| Key | Required | Description |\n| --- | --- | --- |\n| x-host | Yes | Host identifier (e.g., `wwpersonalitytest.com`) |\n| ip_address | Yes | Client IP address |\n| Content-Type | Yes | Must be `application/json` |\n| Authorization | Yes | Bearer token or API authorization key |\n\n---\n\n### **Request Body (JSON)**\n\n``` json\n{\n  \"quiz_result_id\": \"Xez0l20LLX2pQ4L8\",\n  \"old_quiz_id\": \"\"\n}\n\n ```\n\n---\n\n### **Field Descriptions**\n\n| Field | Type | Required | Description |\n| --- | --- | --- | --- |\n| quiz_result_id | string | Yes | Encrypted quiz result ID |\n| old_quiz_id | string | No | Legacy system quiz result ID (used only for legacy quiz data) |\n\n---\n\n### **Response**\n\n**Success (200)**\n\n``` json\n{\n  \"meta\": {\n    \"message\": \"successfully\",\n    \"success\": true,\n    \"status\": 200\n  },\n  \"data\": {\n    \"report_file_url\": \"string\",\n    \"certificate_file_url\": \"string\",\n    \"quiz_result_id\": 0,\n    \"encrypted_quiz_result_id\": \"string\",\n    \"promocode_url\": \"string\",\n    \"personality_type\": \"string\"\n  }\n}\n\n ```\n\n---\n\n### **Error Responses**\n\n- `400 Bad Request` – Invalid input data\n    \n- `401 Unauthorized` – Invalid or missing authorization\n    \n- `500 Internal Server Error` – Server-side issue\n    \n\n---\n\n### **Notes**\n\n- This is the **final step API** in the flow after payment and user detail submission.\n    \n- It generates and returns:\n    \n    - **Report file URL** (for viewing/downloading)\n        \n    - **Certificate file URL** (if available)\n        \n- `promocode_url` may be returned for free access to additional services.\n    \n- `quiz_result_id` must be passed in **encrypted format**.\n    \n- `old_quiz_id` is used **only for legacy system quiz results**.\n    \n- The frontend should use the returned URLs to display or download the report/certificate."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "cross-sale-payment",
+      "request": {
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "{{SECRET_KEY}}",
+              "type": "string"
+            }
+          ]
+        },
+        "method": "POST",
+        "header": [
+          {
+            "key": "x-host",
+            "value": "{{x-host}}",
+            "type": "text"
+          },
+          {
+            "key": "ip_address",
+            "value": "{{ip}}",
+            "type": "text"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\r\n    \"quiz_result_id\": 37688,\r\n    \"user_on_iqbooster\": \"\",\r\n    \"prc_id\": \"\",\r\n    \"pricing_discount\": \"\"\r\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "{{BASE_URL}}payment/cross-sale/payments/confirm",
+          "host": [
+            "{{BASE_URL}}payment"
+          ],
+          "path": [
+            "cross-sale",
+            "payments",
+            "confirm"
+          ]
+        },
+        "description": "### **API Name:** Confirm Cross Sale Payment\n\n**Endpoint:**  \n`POST /api/v1/payment/cross-sale/payments/confirm`\n\n**Base URL:**  \n`http://localhost:3003`\n\n---\n\n### **Description**\n\nThis API is used to confirm the cross-sale payment for a user. It is an **optional API**, triggered only when the user chooses to accept the cross-sale offer from the frontend.\n\n---\n\n### **Headers**\n\n| Key | Required | Description |\n| --- | --- | --- |\n| x-host | Yes | Host identifier (e.g., `iqpro.ai`) |\n| ip_address | Yes | Client IP address |\n| Content-Type | Yes | Must be `application/json` |\n| Authorization | Yes | Bearer token or API authorization key |\n\n---\n\n### **Request Body (JSON)**\n\n``` json\n{\n  \"quiz_result_id\": 37640,\n  \"user_on_iqbooster\": \"\",\n  \"prc_id\": \"\",\n  \"pricing_discount\": \"\"\n}\n\n ```\n\n---\n\n### **Field Descriptions**\n\n| Field | Type | Required | Description |\n| --- | --- | --- | --- |\n| quiz_result_id | integer | Yes | Associated quiz result ID |\n| user_on_iqbooster | string | No | Indicates if user exists on IQBooster platform |\n| prc_id | string | No | Pricing ID if applicable |\n| pricing_discount | string | No | Discount code or identifier |\n\n---\n\n### **Response**\n\n**Success (200)**\n\n``` json\n{\n  \"meta\": {\n    \"message\": \"Cross sale payment confirmed\",\n    \"success\": true,\n    \"status\": 200\n  },\n  \"data\": {\n    \"redirect_page\": \"string\"\n  }\n}\n\n ```\n\n---\n\n### **Error Responses**\n\n- `400 Bad Request` – Invalid input data\n    \n- `401 Unauthorized` – Invalid or missing authorization\n    \n- `500 Internal Server Error` – Server-side issue\n    \n\n---\n\n### **Notes**\n\n- This API is **optional** and should only be called when the user accepts the cross-sale offer.\n    \n- It confirms the cross-sale transaction linked to the `quiz_result_id`.\n    \n- The response includes a `redirect_page` key, which the frontend should use to determine the next step in the flow.\n    \n- Optional fields can be left empty if not applicable."
+      },
+      "response": []
+    },
+    {
+      "name": "Home Page Price",
+      "request": {
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "{{SECRET_KEY}}",
+              "type": "string"
+            }
+          ]
+        },
+        "method": "POST",
+        "header": [
+          {
+            "key": "ip_address",
+            "value": "{{ip}}",
+            "type": "text"
+          },
+          {
+            "key": "x-host",
+            "value": "{{x-host}}",
+            "type": "text"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\r\n    // \"prc_id\": \"prc_id\"\r\n    // \"pricing_discount\": {\r\n    //     // \"mdid\": \"50\",\r\n    //     // \"prc_id\": \"prc_id\"\r\n    // }\r\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "{{BASE_URL}}price",
+          "host": [
+            "{{BASE_URL}}price"
+          ]
+        },
+        "description": "### **API Name:** Get Pricing Details\n\n**Endpoint:**  \n`POST /api/v1/price`\n\n**Base URL:**  \n`http://localhost:3003`\n\n---\n\n### **Description**\n\nThis API retrieves pricing details for the application. It is primarily used to display pricing information on the website home page or checkout page, including first sale, cross-sale, subscription pricing, and available payment gateways.\n\n---\n\n### **Headers**\n\n| Key | Required | Description |\n| --- | --- | --- |\n| x-host | Yes | Host identifier (e.g., `wwpersonalitytest.com`) |\n| ip_address | Yes | Client IP address |\n| Content-Type | Yes | Must be `application/json` |\n| Authorization | Yes | Bearer token or API authorization key |\n\n---\n\n### **Request Body (JSON)**\n\n``` json\n{\n}\n\n ```\n\n---\n\n### **Response**\n\n**Success (200)**\n\n``` json\n{\n  \"meta\": {\n    \"message\": \"Price data retrieved successfully\",\n    \"success\": true,\n    \"status\": 200\n  },\n  \"data\": {\n    \"payment_text\": {\n      \"first_sale\": \"string\",\n      \"cross_sale\": \"string\",\n      \"subscription\": \"string\"\n    },\n    \"currency_code\": \"string\",\n    \"first_sale_price\": \"string\",\n    \"cross_sale_price\": \"string\",\n    \"subscription_price\": \"string\",\n    \"payment_gateways\": [\n      {\n        \"id\": \"string\",\n        \"name\": \"string\"\n      }\n    ],\n    \"transactions\": {\n      \"first_sale\": {\n        \"description\": \"string\",\n        \"amount\": \"string\"\n      },\n      \"cross_sale\": {\n        \"description\": \"string\",\n        \"amount\": \"string\"\n      }\n    },\n    \"first_sale_price_label\": \"string\",\n    \"cross_sale_price_label\": \"string\",\n    \"subscription_price_label\": \"string\"\n  }\n}\n\n ```\n\n---\n\n### **Error Responses**\n\n- `400 Bad Request` – Invalid request\n    \n- `401 Unauthorized` – Invalid or missing authorization\n    \n- `500 Internal Server Error` – Server-side issue\n    \n\n---\n\n### **Notes**\n\n- This API is mainly used to **display pricing on the homepage or checkout page**.\n    \n- It provides:\n    \n    - **Pricing values and labels**\n        \n    - **Payment gateway options (e.g., Stripe, PayPal)**\n        \n    - **Transaction breakdown (first sale, cross-sale, subscription)**\n        \n- `ip_address` header is required for pricing logic (e.g., geo-based pricing).\n    \n- No request body parameters are required."
+      },
+      "response": []
+    },
+    {
+      "name": "Price After Submit",
+      "request": {
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "{{SECRET_KEY}}",
+              "type": "string"
+            }
+          ]
+        },
+        "method": "POST",
+        "header": [
+          {
+            "key": "ip_address",
+            "value": "{{ip}}",
+            "description": "JP - 133.130.45.22\nIND - 49.36.120.15\n",
+            "type": "text"
+          },
+          {
+            "key": "x-host",
+            "value": "{{x-host}}",
+            "type": "text"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\r\n    // \"country_data\": {\r\n    //     \"continent\": \"Asia\",\r\n    //     \"continent_code\": \"AS\",\r\n    //     \"country\": \"Japan\",\r\n    //     \"country_code\": \"JP\",\r\n    //     \"region\": null\r\n    // },\r\n\r\n    \"test_token\": \"9ad5746b2cf1674fc1eb604ddb9559f2\"\r\n    // \"prc_id\": \"PATEL\",\r\n    // \"pricing_discount\": {\r\n    //     \"mdid\": \"50\"\r\n    // }\r\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "{{BASE_URL}}price/after/submit",
+          "host": [
+            "{{BASE_URL}}price"
+          ],
+          "path": [
+            "after",
+            "submit"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "Generate Promocode Free Access",
+      "request": {
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "",
+              "type": "string"
+            }
+          ]
+        },
+        "method": "POST",
+        "header": [
+          {
+            "key": "ip_address",
+            "value": "{{ip}}",
+            "description": "JP - 133.130.45.22\nIND - 49.36.120.15\n",
+            "type": "text"
+          },
+          {
+            "key": "x-host",
+            "value": "{{x-host}}",
+            "type": "text"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\r\n    \"domain\": \"wwpersonalitytest.com\",\r\n    \"value\": \"100\"\r\n}\r\n\r\n\r\n",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "{{BASE_URL}}promocodes/free/access",
+          "host": [
+            "{{BASE_URL}}promocodes"
+          ],
+          "path": [
+            "free",
+            "access"
+          ]
+        }
+      },
+      "response": []
+    }
+  ],
+  "auth": {
+    "type": "bearer",
+    "bearer": [
+      {
+        "key": "token",
+        "value": "{{SECRET_KEY}}",
+        "type": "string"
+      }
+    ]
+  },
+  "event": [
+    {
+      "listen": "prerequest",
+      "script": {
+        "type": "text/javascript",
+        "packages": {},
+        "requests": {},
+        "exec": [
+          ""
+        ]
+      }
+    },
+    {
+      "listen": "test",
+      "script": {
+        "type": "text/javascript",
+        "packages": {},
+        "requests": {},
+        "exec": [
+          ""
+        ]
+      }
+    }
+  ],
+  "variable": [
+    {
+      "key": "BASE_URL",
+      "value": ""
+    },
+    {
+      "key": "LOCAL_URL",
+      "value": ""
+    },
+    {
+      "key": "STAGE_URL",
+      "value": ""
+    },
+    {
+      "key": "SECRET_KEY",
+      "value": ""
+    }
+  ]
+}

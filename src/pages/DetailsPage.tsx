@@ -1,12 +1,17 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { ChevronDown } from 'lucide-react';
+import { useLocalizedNavigate } from '@/hooks/useLocale';
 import { useRedirectGuard } from '@/hooks/useRedirectGuard';
 import { ApiError, NetworkError, apiPut } from '@/lib/api';
 import { withPromoParams } from '@/lib/promoUrl';
-import { resolveRedirect } from '@/lib/redirectRouter';
+import {
+  qidParamForRoute,
+  resolveEffectiveRedirect,
+  resolveRedirect,
+} from '@/lib/redirectRouter';
 import { getSession, patchSession } from '@/lib/session';
 
 interface CustomerUpdateResponse {
@@ -16,7 +21,8 @@ interface CustomerUpdateResponse {
 }
 
 const DetailsPage = () => {
-  const navigate = useNavigate();
+  const navigate = useLocalizedNavigate();
+  const { t } = useTranslation();
   const ready = useRedirectGuard('/details');
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
@@ -68,15 +74,31 @@ const DetailsPage = () => {
       // Keep the session in sync with the latest backend-issued qids.
       // `customerUpdateSubmitted` stops the redirect guard from bouncing a
       // refreshed `/results` back here — the backend keeps reporting
-      // CUSTOMER_DETAILS_PAGE until the next state-advancing action.
+      // CUSTOMER_DETAILS_PAGE (or CROSS_SELL_OFFER_PAGE, when the user
+      // skipped the upsell client-side) until the next state-advancing
+      // action.
       patchSession({
         qidRaw: response.quiz_result_id,
         qidEncrypted: response.encrypted_quiz_result_id,
         customerUpdateSubmitted: true,
       });
 
-      const route = resolveRedirect(response.redirect_page);
-      navigate(withPromoParams(`${route}?qid=${response.quiz_result_id}`), {
+      // The PUT response's `redirect_page` is subject to the same staleness
+      // as `/questions/results` — it can echo a step the user has already
+      // passed. Apply the cascading override so we navigate forward to
+      // THANK_YOU_PAGE in one shot instead of bouncing through
+      // /cross-sell or /details and triggering the guard repeatedly.
+      const effective = resolveEffectiveRedirect(
+        response.redirect_page,
+        getSession(),
+      );
+      const route = resolveRedirect(effective);
+      const qidParam = qidParamForRoute(
+        route,
+        response.quiz_result_id,
+        response.encrypted_quiz_result_id,
+      );
+      navigate(withPromoParams(`${route}?qid=${qidParam}`), {
         replace: true,
       });
     } catch (err) {
@@ -102,7 +124,7 @@ const DetailsPage = () => {
           <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
           <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
         </svg>
-        <p className="text-base font-semibold text-foreground">Generating your personality report…</p>
+        <p className="text-base font-semibold text-foreground">{t('details.generating')}</p>
       </div>
     );
   }
@@ -112,7 +134,7 @@ const DetailsPage = () => {
       {/* Header with logo */}
       <nav className="w-full border-b border-border bg-background">
         <div className="max-w-6xl mx-auto px-4 md:px-8 flex items-center h-20">
-          <div className="flex items-center gap-3 cursor-pointer" onClick={() => navigate('/')}>
+          <div className="flex items-center gap-3">
             <svg width="40" height="40" viewBox="0 0 40 40" className="flex-shrink-0 w-7 h-7 md:w-10 md:h-10">
               {[0, 45, 90, 135, 180, 225, 270, 315].map((angle, i) => {
                 const rad = (angle * Math.PI) / 180;
@@ -138,9 +160,9 @@ const DetailsPage = () => {
             <div className="flex flex-col" style={{ lineHeight: '1.1' }}>
               <span className="text-lg md:text-2xl font-extrabold uppercase tracking-[0.06em]">
                 <span style={{ color: 'hsl(270 50% 45%)' }}>16</span>
-                <span className="text-foreground"> Types Test</span>
+                <span className="text-foreground"> {t('brand.name')}</span>
               </span>
-              <span className="text-[9px] md:text-[11px] font-medium tracking-[0.25em] text-muted-foreground">Inspired by MBTI Theory</span>
+              <span className="text-[9px] md:text-[11px] font-medium tracking-[0.25em] text-muted-foreground">{t('brand.tagline')}</span>
             </div>
           </div>
         </div>
@@ -153,24 +175,24 @@ const DetailsPage = () => {
           <div className="px-6 md:px-10 py-8 md:py-10 space-y-6">
             <div className="space-y-2">
               <h1 className="text-xl md:text-2xl font-bold text-foreground">
-                You're almost done
+                {t('details.title')}
               </h1>
               <div className="w-12 h-[3px] bg-primary rounded-full" />
               <p className="text-sm md:text-base text-muted-foreground leading-relaxed pt-2">
-                Please enter your details to generate your personality report
+                {t('details.subhead')}
               </p>
             </div>
 
             <form onSubmit={handleSubmit} className="space-y-4">
               <Input
-                placeholder="First Name"
+                placeholder={t('details.firstName')}
                 value={firstName}
                 onChange={(e) => setFirstName(e.target.value)}
                 required
                 className="h-12 text-base bg-background border-2 border-foreground/40 rounded-lg"
               />
               <Input
-                placeholder="Last Name"
+                placeholder={t('details.lastName')}
                 value={lastName}
                 onChange={(e) => setLastName(e.target.value)}
                 required
@@ -183,7 +205,7 @@ const DetailsPage = () => {
                   required
                   className="flex h-12 w-full rounded-lg border-2 border-foreground/40 bg-background px-3 py-2 text-base text-foreground ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 appearance-none pr-10"
                 >
-                  <option value="" disabled>Age</option>
+                  <option value="" disabled>{t('details.age')}</option>
                   {Array.from({ length: 83 }, (_, i) => i + 18).map((a) => (
                     <option key={a} value={a}>{a}</option>
                   ))}
@@ -227,12 +249,11 @@ const DetailsPage = () => {
                   className="rounded-full font-bold text-base"
                   disabled={loading}
                 >
-                  Generate report
+                  {t('details.generate')}
                 </Button>
               </div>
-
               <p className="text-xs text-muted-foreground/60 leading-relaxed">
-                * All data submitted is confidential and it will never be shared with third parties
+                {t('details.privacy')}
               </p>
             </form>
           </div>

@@ -1,5 +1,6 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect } from 'react';
 import SiteFooter from '@/components/SiteFooter';
+import { Trans, useTranslation } from 'react-i18next';
 import { Check, Users, Target, Lightbulb, Heart, Sparkles, MapPin, ShieldCheck } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
@@ -7,12 +8,15 @@ import { Badge } from '@/components/ui/badge';
 import { CheckoutForm } from '@/components/checkout/CheckoutForm';
 import { useRedirectGuard } from '@/hooks/useRedirectGuard';
 import { usePricing } from '@/hooks/usePricing';
-import { DEFAULT_SUBSCRIPTION_DAYS } from '@/lib/pricingConstants';
 import { getSession } from '@/lib/session';
-import gpayIcon from '@/assets/gpay-icon.png';
+import { pushDataLayer } from '@/lib/analytics';
+import { useLocale, withLocalePrefix } from '@/hooks/useLocale';
 import sarahImg from '@/assets/testimonials/sarah.jpg';
 import marcusImg from '@/assets/testimonials/marcus.jpg';
 import priyaImg from '@/assets/testimonials/priya.jpg';
+import yukiImg from '@/assets/testimonials/yuki.jpg';
+import harutoImg from '@/assets/testimonials/haruto.jpg';
+import aoiImg from '@/assets/testimonials/aoi.jpg';
 
 import intjImg from '@/assets/personalities/intj-strategist.png';
 import intpImg from '@/assets/personalities/intp-thinker.png';
@@ -81,6 +85,7 @@ const socialProofItems = [
 ];
 
 const SocialProofTicker = () => {
+  const { t } = useTranslation();
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isVisible, setIsVisible] = useState(true);
 
@@ -108,7 +113,7 @@ const SocialProofTicker = () => {
         />
         <span className="font-bold text-foreground">{item.name}</span>
         <span className="text-muted-foreground">
-          Personality type: <span className="text-primary font-bold">{item.type}</span>
+          {t('checkout.ticker')} <span className="text-primary font-bold">{item.type}</span>
         </span>
       </div>
     </div>
@@ -136,6 +141,7 @@ const personalityTypes = [
 ];
 
 const PersonalityTypesGrid = () => {
+  const { t } = useTranslation();
   const [revealedIndex, setRevealedIndex] = useState(-1);
   const gender = localStorage.getItem('user_gender');
 
@@ -173,7 +179,7 @@ const PersonalityTypesGrid = () => {
               <img src={getImg(type, index)} alt={type.code} className="w-full h-full object-cover" loading="lazy" />
             </div>
             <span className="text-[10px] md:text-[11px] font-extrabold text-foreground tracking-wide">{type.code}</span>
-            <span className="hidden md:block text-[8px] text-muted-foreground">{type.label}</span>
+            <span className="hidden md:block text-[8px] text-muted-foreground">{t(`sixteenTypes.labels.${type.code}`, type.label)}</span>
           </div>
         ))}
       </div>
@@ -181,32 +187,10 @@ const PersonalityTypesGrid = () => {
   );
 };
 
-const trustFeatures = [
-  { icon: Users, title: 'Who are you, really?', description: 'Discover the deeper patterns behind your 4-letter personality type and what makes you uniquely you.' },
-  { icon: Target, title: 'Your strengths & growth areas', description: 'Understand where you naturally excel, where you may struggle, and how to grow with confidence.' },
-  { icon: Lightbulb, title: 'The career path that fits you best', description: 'Find the roles, work environments, and leadership styles that match your personality type.' },
-  { icon: Heart, title: 'Your relationship style', description: 'Learn how you connect, communicate, and build stronger personal and romantic relationships.' },
-  { icon: Sparkles, title: 'Unlock your potential', description: 'Get personalized brain training exercises based on your personality type to sharpen focus, memory, and decision-making.' },
-];
-
-const benefitsList = [
-  'Unique 4-letter personality type',
-  'Deep insights into strengths and growth areas',
-  'Relationship style and communication patterns',
-  'Ideal career path and work style',
-  'Enjoy a 7-day free trial of IQ Booster, with brain training tailored to your progress',
-];
-
 const testimonials = [
-  { name: 'Sarah K.', age: 29, location: 'New York, US', type: 'ENFJ', typeLabel: 'The Protagonist', img: sarahImg, quote: 'This test captured exactly how I lead and connect with others. The relationship insights helped me understand why I always put people first — and how to set better boundaries without losing my warmth.' },
-  { name: 'Marcus L.', age: 47, location: 'London, UK', type: 'INTJ', typeLabel: 'The Architect', img: marcusImg, quote: "The strategic breakdown of my personality was remarkably precise. It confirmed my natural approach to problem-solving and gave me new frameworks for improving how I communicate my ideas to others." },
-  { name: 'Priya R.', age: 25, location: 'Mumbai, India', type: 'INFP', typeLabel: 'The Mediator', img: priyaImg, quote: 'Reading my results felt like someone finally understood me. The career path suggestions aligned perfectly with my creative passions, and the growth areas gave me real confidence to pursue what I love.' },
-];
-
-const faqItems = [
-  { question: 'What do I get with my purchase?', answer: "You'll unlock your complete 4-letter personality type report, including detailed trait insights, strengths and growth areas, relationship style, ideal career matches, and personalized brain training recommendations. Your purchase also includes a 7-day free trial of IQ Booster, with daily exercises that adapt to your progress. After 7 days, your subscription will begin automatically unless canceled before the trial ends." },
-  { question: 'How can I cancel my subscription?', answer: 'You can cancel your subscription at any time through your account settings or by contacting our customer support team. There are no cancellation fees.' },
-  { question: 'How can I get support if needed?', answer: 'Our customer support team is available 24/7 via email and live chat. You can also visit our help center for instant answers to common questions.' },
+  { name: 'Sarah K.', age: 29, location: 'New York, US', type: 'ENFJ', typeLabel: 'The Guide', img: sarahImg, quote: 'This test captured exactly how I lead and connect with others. The relationship insights helped me understand why I always put people first — and how to set better boundaries without losing my warmth.' },
+  { name: 'Marcus L.', age: 47, location: 'London, UK', type: 'INTJ', typeLabel: 'The Strategist', img: marcusImg, quote: "The strategic breakdown of my personality was remarkably precise. It confirmed my natural approach to problem-solving and gave me new frameworks for improving how I communicate my ideas to others." },
+  { name: 'Priya R.', age: 25, location: 'Mumbai, India', type: 'INFP', typeLabel: 'The Idealist', img: priyaImg, quote: 'Reading my results felt like someone finally understood me. The career path suggestions aligned perfectly with my creative passions, and the growth areas gave me real confidence to pursue what I love.' },
 ];
 
 const GuardLoading = () => (
@@ -215,20 +199,71 @@ const GuardLoading = () => (
   </div>
 );
 
+// Marketing-only fixed discount. The actual charged amount is whatever the
+// API returns; this percentage is used purely to reverse-calculate a higher
+// "original" price for the strikethrough + "Discount Applied!" copy.
+const MARKETING_DISCOUNT_PCT = 87;
+
+// Reverse-calculate the pre-discount label from the API-formatted price label
+// by replacing only the numeric portion. This preserves whatever currency
+// symbol (and prefix/suffix position) the backend chose, so the strikethrough
+// renders with the same locale formatting as the live price.
+const buildMarketingOriginalLabel = (
+  priceNumeric: string,
+  priceLabel: string,
+): string | null => {
+  const priceNum = parseFloat(priceNumeric);
+  if (!Number.isFinite(priceNum) || priceNum <= 0) return null;
+  const original = priceNum / (1 - MARKETING_DISCOUNT_PCT / 100);
+  const numericMatch = priceLabel.match(/[\d.,]+/);
+  if (!numericMatch) return null;
+  return priceLabel.replace(numericMatch[0], original.toFixed(2));
+};
+
 const CheckoutPage = () => {
+  const { t } = useTranslation();
   const ready = useRedirectGuard('/checkout');
-  const { current, strikethrough, hasPromo, isLoading, isError, refetch } = usePricing();
+  const { current, isLoading, isError, refetch } = usePricing();
   const session = getSession();
 
-  const savings = useMemo(() => {
-    if (!hasPromo || !strikethrough || !current) return null;
-    const baseNum = parseFloat(strikethrough.first_sale_price);
-    const promoNum = parseFloat(current.first_sale_price);
-    if (!Number.isFinite(baseNum) || !Number.isFinite(promoNum) || baseNum <= 0) {
-      return null;
-    }
-    return Math.round((1 - promoNum / baseNum) * 100);
-  }, [hasPromo, strikethrough, current]);
+  useEffect(() => {
+    pushDataLayer({ event: 'PaymentPage', event_category: 'PaymentPage' });
+  }, []);
+
+  const trustFeatures = [
+    { icon: Users, title: t('checkout.trust.f1Title'), description: t('checkout.trust.f1Desc') },
+    { icon: Target, title: t('checkout.trust.f2Title'), description: t('checkout.trust.f2Desc') },
+    { icon: Lightbulb, title: t('checkout.trust.f3Title'), description: t('checkout.trust.f3Desc') },
+    { icon: Heart, title: t('checkout.trust.f4Title'), description: t('checkout.trust.f4Desc') },
+    { icon: Sparkles, title: t('checkout.trust.f5Title'), description: t('checkout.trust.f5Desc') },
+  ];
+
+  const benefitsList = [
+    t('checkout.benefits.b1'),
+    t('checkout.benefits.b2'),
+    t('checkout.benefits.b3'),
+    t('checkout.benefits.b4'),
+    t('checkout.benefits.b5'),
+  ];
+
+  const locale = useLocale();
+  const testimonialImages = locale === 'ja' ? [yukiImg, harutoImg, aoiImg] : [sarahImg, marcusImg, priyaImg];
+  const testimonialAges = [29, 47, 25];
+  const testimonials = (t('checkout.testimonials', { returnObjects: true }) as Array<{ name: string; location: string; type: string; typeLabel: string; quote: string }>).map((x, i) => ({
+    ...x,
+    age: testimonialAges[i],
+    img: testimonialImages[i],
+  }));
+
+  const faqItems = [
+    { question: t('checkout.faq.q1'), answer: t('checkout.faq.a1') },
+    { question: t('checkout.faq.q2'), answer: t('checkout.faq.a2') },
+    { question: t('checkout.faq.q3'), answer: t('checkout.faq.a3') },
+  ];
+
+  const marketingOriginalLabel = current
+    ? buildMarketingOriginalLabel(current.first_sale_price, current.first_sale_price_label)
+    : null;
 
   if (!ready) return <GuardLoading />;
 
@@ -267,22 +302,20 @@ const CheckoutPage = () => {
 
       {/* Banner */}
       <div className="bg-secondary text-secondary-foreground py-4 text-center">
-        <p className="text-sm md:text-base">
-          Your answers reveal a <span className="font-bold">rare</span> personality type
-        </p>
+        <p className="text-sm md:text-base" dangerouslySetInnerHTML={{ __html: t('checkout.banner').replace('<bold>', '<span class="font-bold">').replace('</bold>', '</span>') }} />
       </div>
 
       {/* Hero */}
       <div className="bg-card py-4 md:py-6 pb-8 md:pb-6 px-4 border-b border-border overflow-hidden">
         <div className="max-w-6xl mx-auto flex flex-col items-center text-center">
-          <h2 className="text-3xl md:text-5xl font-extrabold text-foreground mb-5" style={{ lineHeight: '1.35' }}>
-            Your Personality Type<br className="hidden md:block" /> Profile Is Ready!
-          </h2>
+          <h2 className="text-3xl md:text-5xl font-extrabold text-foreground mb-5" style={{ lineHeight: '1.35' }}
+            dangerouslySetInnerHTML={{ __html: t('checkout.heroTitle') }}
+          />
           <p className="text-muted-foreground text-base md:text-xl mb-8 max-w-xl">
-            Get your personality type report with deep insights into your strengths, weaknesses, relationships, and ideal career path.
+            {t('checkout.heroBody')}
           </p>
           <Button size="xl" className="text-2xl px-16 py-8 font-extrabold rounded-full shadow-elevated mb-12" onClick={scrollToPayment}>
-            Reveal My Type
+            {t('checkout.revealCta')}
           </Button>
           <PersonalityTypesGrid />
         </div>
@@ -291,7 +324,7 @@ const CheckoutPage = () => {
       {/* Trustpilot-style Badge */}
       <div className="bg-muted/50 py-4 flex items-center justify-center">
         <div className="flex items-center gap-2 flex-wrap justify-center">
-          <span className="text-foreground font-semibold text-base">Excellent</span>
+          <span className="text-foreground font-semibold text-base">{t('checkout.trustExcellent')}</span>
           <div className="flex gap-0.5">
             {[...Array(4)].map((_, i) => (
               <div key={i} className="w-6 h-6 bg-primary flex items-center justify-center">
@@ -305,7 +338,7 @@ const CheckoutPage = () => {
             </div>
           </div>
           <span className="text-muted-foreground text-sm">
-            Rated <span className="font-semibold">4.7</span> / 5 based on <span className="font-semibold underline">1,468 reviews</span>
+            {t('checkout.trustRated')} <span className="font-semibold">4.7</span> {t('checkout.trustOf')} {t('checkout.trustReviews')} <span className="font-semibold underline">{t('checkout.trustReviewsCount')}</span>
           </span>
         </div>
       </div>
@@ -318,9 +351,9 @@ const CheckoutPage = () => {
             <div className="bg-card rounded-2xl p-6 md:p-8 shadow-card border border-border order-2 lg:order-1">
               <div className="flex items-center gap-2 mb-6 bg-muted rounded-full px-4 py-2 text-sm w-fit">
                 <Users className="w-4 h-4 text-primary" />
-                <span className="font-medium text-foreground">4M+ people have taken this personality test</span>
+                <span className="font-medium text-foreground">{t('checkout.social4M')}</span>
               </div>
-              <h2 className="text-2xl md:text-3xl font-bold text-foreground mb-6">What your type reveals</h2>
+              <h2 className="text-2xl md:text-3xl font-bold text-foreground mb-6">{t('checkout.whatYourTypeReveals')}</h2>
               <div className="space-y-4">
                 {trustFeatures.map((feature, index) => (
                   <div key={index} className="bg-card rounded-xl p-5 border border-border">
@@ -341,7 +374,7 @@ const CheckoutPage = () => {
             {/* Right - Payment */}
             <div id="payment-card" className="order-1 lg:order-2 bg-card rounded-2xl p-6 md:p-8 shadow-card border border-border space-y-4 md:space-y-6">
               <div className="space-y-4">
-                <h3 className="text-xl md:text-2xl font-bold text-foreground">Your full access includes</h3>
+                <h3 className="text-xl md:text-2xl font-bold text-foreground">{t('checkout.fullAccessTitle')}</h3>
                 {benefitsList.map((benefit, index) => (
                   <div key={index} className="flex items-start gap-3">
                     <div className="w-6 h-6 rounded-full bg-primary flex items-center justify-center flex-shrink-0 mt-0.5">
@@ -352,23 +385,23 @@ const CheckoutPage = () => {
                 ))}
               </div>
 
-              {hasPromo && strikethrough && savings !== null && (
+              {current && (
                 <div className="bg-primary/10 rounded-xl p-3 md:p-5 border border-primary/20">
                   <div className="flex items-center gap-3">
                     <div className="text-2xl">🎁</div>
                     <div>
-                      <div className="font-bold text-foreground text-base">Discount Applied!</div>
-                      <div className="text-sm text-muted-foreground">You're saving {savings}%</div>
+                      <div className="font-bold text-foreground text-base">{t('checkout.discountTitle')}</div>
+                      <div className="text-sm text-muted-foreground">{t('checkout.discountBody', { percent: MARKETING_DISCOUNT_PCT })}</div>
                     </div>
                   </div>
                 </div>
               )}
 
               <div className="flex items-baseline justify-between">
-                <span className="text-lg md:text-2xl font-bold text-foreground">Total Today:</span>
+                <span className="text-lg md:text-2xl font-bold text-foreground">{t('checkout.totalToday')}</span>
                 <div className="flex items-baseline gap-2">
-                  {strikethrough && (
-                    <span className="text-muted-foreground line-through text-base md:text-lg">({strikethrough.first_sale_price_label})</span>
+                  {marketingOriginalLabel && (
+                    <span className="text-muted-foreground line-through text-base md:text-lg">({marketingOriginalLabel})</span>
                   )}
                   <span className="text-2xl md:text-4xl font-bold text-foreground">
                     {isLoading || !current ? pricePlaceholder : current.first_sale_price_label}
@@ -380,23 +413,29 @@ const CheckoutPage = () => {
                   consent checkbox, the three preserved-visual buttons, the
                   inline CardForm, and the error slot (Module 3 §6.3). */}
               <CheckoutForm
-                priceLabel={current?.first_sale_price_label ?? '---'}
                 pricing={current}
                 email={session.email}
-                gpayIcon={gpayIcon}
               />
 
               <div className="flex items-center justify-center gap-1.5 text-xs text-muted-foreground">
                 <ShieldCheck className="w-4 h-4" />
-                <span>Your payment is secure and encrypted</span>
+                <span>{t('checkout.secure')}</span>
               </div>
 
               <p className="text-xs text-muted-foreground text-center leading-relaxed">
-                By completing your purchase, you agree to pay {current?.first_sale_price_label ?? pricePlaceholder} for your results. Also you accept our{' '}
-                <a href="#" className="underline hover:text-foreground">Terms of Use</a>,{' '}
-                <a href="#" className="underline hover:text-foreground">Privacy Policy</a> and{' '}
-                <a href="#" className="underline hover:text-foreground">subscription policy</a>.
-                {' '}After 7 days, your subscription will begin automatically and renew at {current?.subscription_price_label ?? pricePlaceholder} every {current?.subscription_day_label ?? DEFAULT_SUBSCRIPTION_DAYS} days until canceled.
+                <Trans
+                  i18nKey="checkout.disclaimer"
+                  values={{
+                    price: current?.first_sale_price_label ?? '---',
+                    subscriptionPrice: current?.subscription_price_label ?? '---',
+                  }}
+                  components={{
+                    terms: <a href={withLocalePrefix('/terms-conditions', locale)} target="_blank" rel="noopener noreferrer" className="underline hover:text-foreground" />,
+                    privacy: <a href={withLocalePrefix('/privacy-policy', locale)} target="_blank" rel="noopener noreferrer" className="underline hover:text-foreground" />,
+                    subscription: <a href={withLocalePrefix('/subscription-policy', locale)} target="_blank" rel="noopener noreferrer" className="underline hover:text-foreground" />,
+                    email: <a href="mailto:info@iqbooster.org" className="underline hover:text-foreground" />,
+                  }}
+                />
               </p>
 
             </div>
@@ -410,9 +449,9 @@ const CheckoutPage = () => {
           {/* Top - Report Card */}
           <div className="bg-card rounded-2xl p-6 md:p-8 border border-border flex flex-col md:flex-row items-start gap-6">
             <div className="flex-1">
-              <h2 className="text-xl md:text-2xl font-bold text-foreground mb-3">Your complete type report</h2>
+              <h2 className="text-xl md:text-2xl font-bold text-foreground mb-3">{t('checkout.completeReportTitle')}</h2>
               <p className="text-sm md:text-base text-muted-foreground leading-relaxed">
-                Unlock a detailed personality profile covering your 4-letter type, core strengths, relationship style, communication patterns, and ideal career path.
+                {t('checkout.completeReportBody')}
               </p>
             </div>
             <div className="flex-shrink-0 bg-muted/50 rounded-xl p-5 border border-border flex flex-col items-center gap-2 w-full md:w-52">
@@ -420,7 +459,7 @@ const CheckoutPage = () => {
                 <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
                 <path d="M7 11V7a5 5 0 0 1 10 0v4" />
               </svg>
-              <p className="text-xs text-muted-foreground text-center">Full access is required to unlock your complete report</p>
+              <p className="text-xs text-muted-foreground text-center">{t('checkout.fullAccessRequired')}</p>
             </div>
           </div>
 
@@ -428,13 +467,13 @@ const CheckoutPage = () => {
           <div className="grid md:grid-cols-2 gap-6">
             {/* Left - Brain Training */}
             <div className="bg-primary/5 rounded-2xl p-6 md:p-8 border border-primary/10">
-              <h3 className="text-lg md:text-xl font-bold text-foreground mb-5">How brain training helps you grow</h3>
+              <h3 className="text-lg md:text-xl font-bold text-foreground mb-5">{t('checkout.brainGrowTitle')}</h3>
               <div className="space-y-4">
                 {[
-                  'Improve focus, consistency, and daily productivity',
-                  'Strengthen decision-making based on your natural type',
-                  'Build better habits through personalized daily exercises',
-                  'Stay mentally sharp with adaptive brain training',
+                  t('checkout.brainGrow.i1'),
+                  t('checkout.brainGrow.i2'),
+                  t('checkout.brainGrow.i3'),
+                  t('checkout.brainGrow.i4'),
                 ].map((item, i) => (
                   <div key={i} className="flex items-start gap-3">
                     <div className="w-6 h-6 rounded-full bg-primary flex items-center justify-center flex-shrink-0 mt-0.5">
@@ -448,13 +487,13 @@ const CheckoutPage = () => {
 
             {/* Right - What You'll Improve */}
             <div className="bg-primary/5 rounded-2xl p-6 md:p-8 border border-primary/10">
-              <h3 className="text-lg md:text-xl font-bold text-foreground mb-5">What You'll Improve</h3>
+              <h3 className="text-lg md:text-xl font-bold text-foreground mb-5">{t('checkout.improveTitle')}</h3>
               <div className="space-y-4">
                 {[
-                  'Improve communication and relationship awareness',
-                  'Learn how to work better with your natural strengths',
-                  'Build confidence in career and leadership situations',
-                  'Develop sharper thinking and emotional balance',
+                  t('checkout.improve.i1'),
+                  t('checkout.improve.i2'),
+                  t('checkout.improve.i3'),
+                  t('checkout.improve.i4'),
                 ].map((item, i) => (
                   <div key={i} className="flex items-start gap-3">
                     <div className="w-6 h-6 rounded-full bg-primary flex items-center justify-center flex-shrink-0 mt-0.5">
@@ -472,7 +511,7 @@ const CheckoutPage = () => {
       {/* Testimonials */}
       <section className="py-12 md:py-16">
         <div className="max-w-5xl mx-auto px-4">
-          <h2 className="text-2xl md:text-3xl font-bold text-center text-primary mb-10">What our users say</h2>
+          <h2 className="text-2xl md:text-3xl font-bold text-center text-primary mb-10">{t('checkout.usersSay')}</h2>
           <div className="grid md:grid-cols-3 gap-6">
             {testimonials.map((testimonial, index) => (
               <div key={index} className="bg-card rounded-2xl p-6 border border-border">
@@ -506,7 +545,7 @@ const CheckoutPage = () => {
       <section className="py-12">
         <div className="flex flex-col items-center gap-4 px-4">
           <Button size="lg" className="text-lg md:text-xl px-10 md:px-12 py-6" onClick={scrollToPayment}>
-            Reveal My Type
+            {t('checkout.revealCta')}
           </Button>
         </div>
       </section>

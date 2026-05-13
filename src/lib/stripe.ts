@@ -1,39 +1,61 @@
 /**
- * Stripe SDK singleton + key/mode guard (PRD §4.1, §4.2).
+ * Stripe SDK loader keyed by backend `payment_mode` (PRD §4.1, §4.2).
  *
- * `loadStripe` is invoked once at module scope per Stripe's guidance, so the
- * returned `stripePromise` is the memoised handle shared across components
- * (the `<Elements>` provider on CheckoutPage in Module 3 task 05).
+ * The backend signals `payment_mode: 'sandbox' | 'live'` in the pricing
+ * response. We hold publishable keys for both environments
+ * (`VITE_STRIPE_PUBLISHABLE_KEY_SANDBOX` and
+ * `VITE_STRIPE_PUBLISHABLE_KEY_LIVE`) and pick the matching one at runtime,
+ * so the same build can serve sandbox or live without a rebuild.
  *
- * The real `pk_test_…` / `pk_live_…` value is supplied by each developer in
- * their untracked `.env.local`; `.env.example` only carries the key name.
+ * `loadStripe` is invoked at most once per mode and the resulting promise is
+ * memoised — Stripe's SDK requires a single instance per publishable key.
  */
 
 import { loadStripe, type Stripe } from "@stripe/stripe-js";
 
-const pk = import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY;
+export type PaymentMode = "sandbox" | "live";
 
-export const stripePromise: Promise<Stripe | null> = loadStripe(pk);
+const cache: Partial<Record<PaymentMode, Promise<Stripe | null>>> = {};
+
+function publishableKeyFor(mode: PaymentMode): string {
+  return import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY_LIVE
+}
 
 /**
- * Asserts the published Stripe key's test/live prefix matches the backend's
- * `payment_mode` so a live key can't silently charge against a sandbox
- * backend (or vice versa). Logs in all builds; throws only in dev to prevent
- * the classic "prod key with sandbox backend" footgun without bricking prod
- * on transient misconfig (PRD §4.1).
+ * Returns a memoised `loadStripe` promise for the requested mode. Subsequent
+ * calls with the same mode reuse the cached handle so a single Stripe
+ * instance is shared across `<Elements>` providers.
  */
-export function assertKeyMatchesMode(mode: "sandbox" | "live"): void {
-  // Coerce: `pk` may be undefined when `.env.local` is missing the entry.
-  // `undefined.startsWith(...)` would throw; an empty string is treated the
-  // same as undefined (non-test prefix → mismatch for sandbox mode).
+export function getStripePromise(mode: PaymentMode): Promise<Stripe | null> {
+  const cached = cache[mode];
+  if (cached) return cached;
+  const promise = loadStripe(publishableKeyFor(mode));
+  cache[mode] = promise;
+  return promise;
+}
+
+/**
+ * Defensive sanity check: the publishable key configured for `mode` must
+ * carry the matching `pk_test_` / `pk_live_` prefix. Catches misconfigured
+ * `.env` files where a live key was pasted into the sandbox slot (or vice
+ * versa). Logs in all builds; throws only in dev so prod isn't bricked by
+ * a transient misconfig.
+ */
+export function assertKeyMatchesMode(mode: PaymentMode): void {
+  const pk = publishableKeyFor(mode);
   const isTest = typeof pk === "string" && pk.startsWith("pk_test_");
   const expectedTest = mode === "sandbox";
   if (isTest !== expectedTest) {
     console.error(
-      `[stripe] key mode mismatch: key is ${isTest ? "test" : "live"}, backend is ${mode}`,
+      `[stripe] key mode mismatch: configured key is ${isTest ? "test" : "live"}, backend is ${mode}`,
     );
     if (import.meta.env.DEV) {
       throw new Error("Stripe key / backend payment_mode mismatch");
     }
   }
+}
+
+/** Test-only: drop the cached Stripe promises so a subsequent call reloads. */
+export function _resetStripeCache(): void {
+  for (const k of Object.keys(cache) as PaymentMode[]) delete cache[k];
 }

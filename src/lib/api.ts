@@ -1,5 +1,26 @@
+import { SUPPORTED_LOCALES } from "@/i18n";
 import { ensureIpResolved } from "./ip";
 import { getSession } from "./session";
+
+const DEFAULT_LOCALE = "en";
+
+// Backend scopes locale-specific content by x-host. The canonical English
+// site lives at the root, so `/quiz` -> `16types.ai`; non-default locales
+// live under a path segment, so `/ja/quiz` -> `16types.ai/ja`. Reading the
+// pathname at request time (not boot time) keeps the header correct after
+// a LanguageSwitcher click without requiring any context plumbing.
+function buildXHost(): string {
+  const base = import.meta.env.VITE_X_HOST;
+  const first =
+    typeof window !== "undefined"
+      ? window.location.pathname.split("/").filter(Boolean)[0]
+      : undefined;
+  const isLocaleSegment =
+    !!first &&
+    first !== DEFAULT_LOCALE &&
+    (SUPPORTED_LOCALES as readonly string[]).includes(first);
+  return isLocaleSegment ? `${base}/${first}` : base;
+}
 
 export class ApiError extends Error {
   constructor(
@@ -12,7 +33,7 @@ export class ApiError extends Error {
 }
 
 export class NetworkError extends Error {
-  constructor(message = "Network request failed ") {
+  constructor(message = "Network request failed") {
     super(message);
     this.name = "NetworkError";
   }
@@ -42,7 +63,7 @@ async function request<T>(
       method,
       headers: {
         Authorization: `Bearer ${import.meta.env.VITE_API_TOKEN}`,
-        "x-host": import.meta.env.VITE_X_HOST,
+        "x-host": buildXHost(),
         ip_address: getSession().ipAddress ?? "",
         "Content-Type": "application/json",
       },

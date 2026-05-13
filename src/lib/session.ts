@@ -9,6 +9,8 @@
  * this module; InstructionsPage continues to own that key (PRD §4.3).
  */
 
+import type { PaymentIntentMethodType } from "@/hooks/usePaymentIntent";
+
 import type { PricingInfo } from "./apiTypes";
 
 export interface FunnelSession {
@@ -31,10 +33,13 @@ export interface FunnelSession {
       qidRaw: number;
       prcId: string;
       mdid: string;
-      /** Which payment method the intent was created for (`card`, `paypal`,
-       *  `google_pay`, …). Caching is keyed by method too so a user who
-       *  switches buttons gets a fresh intent with the right type. */
-      methodType: string;
+      /** The `payment_method_type` the intent was created for. Sourced
+       *  from `PaymentIntentMethodType` so the union has a single
+       *  authoritative definition (see `usePaymentIntent.ts`). Currently
+       *  collapses to `'card'` for both the card surface and the ECE
+       *  wallet surface per Design Doc KDD-3. PayPal is excluded — it
+       *  uses the native PayPal SDK and never creates a Stripe intent. */
+      methodType: PaymentIntentMethodType;
     };
     createdAt: number;
   };
